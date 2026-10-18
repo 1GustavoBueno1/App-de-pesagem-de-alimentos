@@ -6,6 +6,8 @@ def ler_peso(texto: str):
         valor = Decimal(texto)
     except InvalidOperation:
         raise ValueError("peso invalido")
+    if not valor.is_finite():
+        raise ValueError("Erro no valor")
     if valor <= 0:
         raise ValueError("O peso deve ser maior que zero")
     return valor

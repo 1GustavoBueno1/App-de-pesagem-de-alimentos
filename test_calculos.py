@@ -16,6 +16,13 @@ def test_letra():
     with pytest.raises(ValueError):
         ler_peso("A")
 
+def test_NAN():
+    with pytest.raises(ValueError):
+        ler_peso("NaN")
+def test_infinity():
+    with pytest.raises(ValueError):
+        ler_peso("Infinity")
+
 def test_espacos():
     assert ler_peso("  2  ") == Decimal("2")
 
