@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 import pytest
-from calculos import ler_peso, peso_liquido
+from calculos import ler_peso, peso_liquido, custo_alimentos
 
 def test_virgula():
     assert ler_peso("3,5") == Decimal("3.5")
@@ -44,3 +44,26 @@ def test_liquido_zero():
 def test_liquido_negativo():
     with pytest.raises(ValueError):
         peso_liquido(Decimal("1.5"), Decimal("2.0"))
+
+def test_custo_correto1():
+    assert custo_alimentos(Decimal("3.3"), Decimal("8.50")) == Decimal("28.05")
+
+def test_custo_correto2():
+    assert custo_alimentos(Decimal("0.5"), Decimal("1.01")) == Decimal("0.51")
+
+def test_custo_correto3():
+    assert custo_alimentos(Decimal("0.333"), Decimal("8.50")) == Decimal("2.83")
+
+def test_custo_negativo_liquido():
+    with pytest.raises(ValueError):
+            custo_alimentos(Decimal("-1"), Decimal("8.5"))
+def test_custo_zero_liquido():
+    with pytest.raises(ValueError):
+        custo_alimentos(Decimal("0"), Decimal("8 .5"))
+
+def test_custo_negativo_liquido():
+    with pytest.raises(ValueError):
+            custo_alimentos(Decimal("8.5"), Decimal("-1"))
+def test_custo_zero_liquido():
+    with pytest.raises(ValueError):
+        custo_alimentos(Decimal("8.5"), Decimal("0"))
