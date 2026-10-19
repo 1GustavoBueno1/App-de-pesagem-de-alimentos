@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 import pytest
-from calculos import ler_peso, peso_liquido, custo_alimentos
+from calculos import ler_peso, peso_liquido, custo_alimentos, custo_producao
 
 def test_virgula():
     assert ler_peso("3,5") == Decimal("3.5")
@@ -56,7 +56,7 @@ def test_custo_correto3():
 
 def test_custo_negativo_liquido():
     with pytest.raises(ValueError):
-            custo_alimentos(Decimal("-1"), Decimal("8.5"))
+        custo_alimentos(Decimal("-1"), Decimal("8.5"))
 def test_custo_zero_liquido():
     with pytest.raises(ValueError):
         custo_alimentos(Decimal("0"), Decimal("8 .5"))
@@ -67,3 +67,20 @@ def test_custo_negativo_liquido():
 def test_custo_zero_liquido():
     with pytest.raises(ValueError):
         custo_alimentos(Decimal("8.5"), Decimal("0"))
+
+def test_custo_prod():
+    assert custo_producao(Decimal("0.25"), Decimal("10.10"), Decimal("0.30")) == Decimal("3.28")
+
+def test_custo_producao_liquido_peso():
+    with pytest.raises(ValueError):
+        custo_producao(Decimal("-1"), Decimal("8.5"), Decimal("0.30"))
+def test_custo_producao_zero_liquido_peso():
+    with pytest.raises(ValueError):
+        custo_producao(Decimal("0"), Decimal("8.5"), Decimal("0.30"))
+
+def test_custo_producao_liquido_valor_alimento():
+    with pytest.raises(ValueError):
+        custo_producao(Decimal("8.5"), Decimal("-1"), Decimal("0.30"))
+def test_custo_producao_zero_liquido_valor_alimento():
+    with pytest.raises(ValueError):
+        custo_producao(Decimal("8.5"), Decimal("0"), Decimal("0.30"))

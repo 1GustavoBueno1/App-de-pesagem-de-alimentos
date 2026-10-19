@@ -22,6 +22,16 @@ def custo_alimentos(liquido, peso_kg):
     if liquido <= 0:
         raise ValueError("Peso liquido deve ser maior que zero")
     if peso_kg <= 0:
-        raise(ValueError("Peso do alimento deve ser maior que zero"))
+        raise ValueError("Peso do alimento deve ser maior que zero")
     custo = liquido * peso_kg
     return custo.quantize(Decimal("0.01"), rounding = ROUND_HALF_UP)
+
+def custo_producao(peso_kg, preco_kg, taxa):
+    if peso_kg <= 0:
+        raise ValueError("O peso deve ser maior que 0")
+    if preco_kg <= 0:
+        raise ValueError("O preço de Kg deve ser maior que 0")
+    if taxa < 0:
+        raise ValueError("A taxa deve ser maior que 0")
+    calculo = preco_kg * peso_kg * (1 + taxa)
+    return calculo.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
