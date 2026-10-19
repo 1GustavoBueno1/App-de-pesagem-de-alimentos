@@ -18,7 +18,7 @@ def peso_liquido(bruto:Decimal, tara:Decimal):
         raise ValueError("o peso bruto precisa ser maior que a tara do recipiente")
     return liquido
 
-def custo_alimentos(liquido, peso_kg):
+def custo_alimento(liquido, peso_kg):
     if liquido <= 0:
         raise ValueError("Peso liquido deve ser maior que zero")
     if peso_kg <= 0:
@@ -35,3 +35,12 @@ def custo_producao(peso_kg, preco_kg, taxa):
         raise ValueError("A taxa deve ser maior que 0")
     calculo = preco_kg * peso_kg * (1 + taxa)
     return calculo.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+def percentual_sobra(sobra, saida):
+    if saida <= 0:
+        raise ValueError("Impossivel dividir por zero")
+    if sobra < 0:
+        raise ValueError("Sobra não pode ser negativa")
+    if sobra > saida:
+        raise ValueError("A sobra não pode ser maior que a saida")
+    calculo = sobra / saida * 100
+    return calculo.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
