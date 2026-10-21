@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diaSP, formatarData, mesDe, dataValida } from '../src/datas.js';
+import { diaSP, formatarData, mesDe, dataValida, dataHoraSP } from '../src/datas.js';
 
 describe('diaSP (dia no fuso America/Sao_Paulo)', () => {
   it('23:30 em São Paulo ainda é o mesmo dia (em UTC já é o seguinte)', () =>
@@ -22,4 +22,9 @@ describe('mesDe', () => {
 describe('dataValida', () => {
   it.each(['2026-10-21', '2028-02-29'])('%s é válida', (d) => expect(dataValida(d)).toBe(true));
   it.each(['2026-02-30', '2026-13-01', '21/10/2026', '', null])('%s é inválida', (d) => expect(dataValida(d)).toBe(false));
+});
+
+describe('dataHoraSP', () => {
+  it('data e hora em São Paulo', () =>
+    expect(dataHoraSP(new Date('2026-10-22T02:05:00Z'))).toBe('21/10/2026 23:05'));
 });

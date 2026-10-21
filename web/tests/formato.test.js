@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { D } from '../src/calculos.js';
-import { dinheiro, peso, percentual, taxaPercentual, paraFirestore } from '../src/formato.js';
+import { dinheiro, peso, percentual, taxaPercentual, paraFirestore, numero } from '../src/formato.js';
 
 describe('formatação para a tela (pt-BR, sem Number)', () => {
   it('dinheiro', () => {
@@ -33,4 +33,11 @@ describe('paraFirestore (string que as rules aceitam)', () => {
     expect(() => paraFirestore(D('1.1234567'), 'Peso bruto')).toThrow('Peso bruto: use no máximo 6 casas decimais.'));
   it('recusa mais de 9 dígitos inteiros', () =>
     expect(() => paraFirestore(D('1234567890'), 'Peso bruto')).toThrow('Peso bruto: valor grande demais.'));
+});
+
+describe('numero (sem unidade, para tabelas)', () => {
+  it('formata com casas fixas', () => {
+    expect(numero('1234.5', 2)).toBe('1.234,50');
+    expect(numero(D('3.3'), 3)).toBe('3,300');
+  });
 });

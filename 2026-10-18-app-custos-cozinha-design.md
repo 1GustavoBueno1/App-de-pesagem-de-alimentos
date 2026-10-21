@@ -91,16 +91,17 @@ Prévia: sobra em kg e % de sobra. **Enter** registra.
 
 ## 6. Relatório PDF (uma página A4)
 
-Gerado no navegador (jsPDF + jspdf-autotable), em A4 retrato com margens de 15 mm.
+Gerado no navegador (jsPDF + jspdf-autotable), em A4 retrato com margens de 15 mm, pelo
+botão **Gerar PDF** da aba Relatórios. O rodapé mostra "Página N de M".
 
 1. **Cabeçalho**: "Relatório de produção: DD/MM/AAAA" e, à direita,
    "Gerado em DD/MM/AAAA HH:MM".
 2. **Tabela de produção**: Alimento | Recipiente | Peso líquido (kg) | Preço/kg (R$) |
-   Custo de produção (R$) | Sobra (kg) | % sobra. Saída sem sobra mostra "—".
+   Taxa | Custo de produção (R$) | Sobra (kg) | % sobra. Saída sem sobra mostra "—".
 3. **Linha de totais**: peso líquido total, custo de produção total e sobra total
    (sem % geral).
-4. **Taxa aplicada**: se todas as saídas usaram a mesma taxa, "Taxa: 30%". Se não,
-   "Taxas variadas".
+4. **Taxa**: fica numa coluna da tabela, e não numa linha separada, porque a decisão 2
+   permite taxas diferentes por saída.
 5. **Observação do dia**: só aparece se houver.
 6. **Gastos do dia**: seção separada, **só se houver gastos** com data de pagamento
    igual ao dia. Colunas Descrição | Forma de pagamento | Valor, e o total.

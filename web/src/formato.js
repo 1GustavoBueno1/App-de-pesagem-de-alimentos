@@ -8,6 +8,8 @@ function comSeparadores(valor, casas) {
   return fracao === undefined ? agrupado : `${agrupado},${fracao}`;
 }
 
+/** Número pt-BR sem unidade (para tabelas cujo cabeçalho já diz a unidade). */
+export const numero = (valor, casas) => comSeparadores(valor, casas);
 export const dinheiro = (valor) => `R$ ${comSeparadores(valor, 2)}`;
 export const peso = (valor) => `${comSeparadores(valor, 3)} kg`;
 export const percentual = (valor) => `${comSeparadores(valor, 1)}%`;

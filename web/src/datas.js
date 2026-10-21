@@ -36,3 +36,19 @@ export function dataValida(dia) {
   const [a, m, d] = dia.split('-').map(Number);
   return m >= 1 && m <= 12 && d >= 1 && d <= diasNoMes(a, m);
 }
+
+const FORMATO_DATA_HORA_SP = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+/** "21/10/2026 14:05" no fuso de São Paulo. */
+export function dataHoraSP(instante = new Date()) {
+  const p = Object.fromEntries(FORMATO_DATA_HORA_SP.formatToParts(instante).map((x) => [x.type, x.value]));
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
+}

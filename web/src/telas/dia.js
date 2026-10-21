@@ -1,6 +1,6 @@
 // Tela de um dia: tabela das saídas com sobra, totais e observação.
 // editavel = true  -> aba "Hoje" (abre em hoje, mas aceita outra data para corrigir dias anteriores)
-// editavel = false -> aba "Relatórios" (só leitura; o PDF entra na etapa 7)
+// editavel = false -> aba "Relatórios" (só leitura, com o botão Gerar PDF)
 import { el, trocar } from '../dom.js';
 import { D } from '../calculos.js';
 import { diaSP, formatarData } from '../datas.js';
@@ -26,6 +26,7 @@ export function telaDia(repo, { editavel }) {
   const data = campoData('Dia', diaSP());
   const titulo = el('h3', {});
   const area = el('div', { class: 'pilha' });
+  let carregado = null; // dados do dia exibido, reaproveitados pelo PDF (sem nova leitura)
 
   async function desenhar() {
     const dia = data.input.value;
@@ -33,6 +34,7 @@ export function telaDia(repo, { editavel }) {
     const saidas = await repo.saidasDoDia(dia);
     const [sobras, obs] = await Promise.all([repo.sobrasDe(saidas.map((s) => s.id)), repo.observacao(dia)]);
     const { linhas, totais } = resumirDia(saidas, sobras);
+    carregado = { dia, saidas, sobras, observacao: obs, gastos: [] };
     trocar(
       area,
       linhas.length ? tabelaDoDia(linhas, totais, sobras) : el('p', { class: 'aviso' }, 'Nenhuma saída nesta data.'),
@@ -197,9 +199,17 @@ export function telaDia(repo, { editavel }) {
     desenhar().catch((e) => aviso.erro(traduzirErro(e)));
   });
 
-  const pdf = editavel
-    ? null
-    : el('button', { type: 'button', disabled: true, title: 'Entra na etapa 7' }, 'Gerar PDF (etapa 7)');
+  const pdf = editavel ? null : el('button', { type: 'button', class: 'primario' }, 'Gerar PDF');
+  pdf?.addEventListener('click', () =>
+    executar(aviso, pdf, async () => {
+      if (!carregado || carregado.dia !== data.input.value) await desenhar();
+      // jsPDF só é baixado quando o PDF é pedido (o app abre mais rápido).
+      const [{ montarRelatorio }, { baixarPdf }] = await Promise.all([import('../relatorio.js'), import('../pdf.js')]);
+      const relatorio = montarRelatorio(carregado);
+      baixarPdf(relatorio);
+      aviso.ok(`PDF gerado: ${relatorio.nomeArquivo}`);
+    }),
+  );
 
   desenhar().catch((e) => aviso.erro(traduzirErro(e)));
   return el(
