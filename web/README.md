@@ -118,13 +118,69 @@ npx firebase login             # abre o navegador para entrar com a sua conta Go
 npx firebase use dudusistemas   # projeto já configurado em .firebaserc
 ```
 
-O deploy (`npm run deploy`) só será feito na etapa 9.
+## Deploy (publicação)
+
+O deploy é **automático pelo GitHub Actions** (`.github/workflows/deploy-firebase.yml`):
+a cada mudança na branch `main` dentro de `web/`, ele roda os testes unitários e os testes
+no emulador e, **só se tudo passar**, faz o build e publica o Hosting e as regras do
+Firestore. Também dá para rodar à mão em GitHub > Actions > "Deploy no Firebase" > Run
+workflow.
+
+- A chave da conta de serviço fica no secret `FIREBASE_SERVICE_ACCOUNT` do repositório
+  (Settings > Secrets and variables > Actions). Ela é gravada num arquivo temporário do
+  runner, usada pelo `firebase deploy` e apagada no fim. Nunca vai para o código.
+- Endereços do app: https://dudusistemas.web.app e https://dudusistemas.firebaseapp.com
+- Com PC, também dá para publicar direto: `npm run deploy` (depois de `npx firebase login`).
+- Se o deploy falhar por **permissão** (erro 403 ou "permission denied"), a conta de
+  serviço precisa destes papéis no Google Cloud (IAM): *Firebase Hosting Admin*,
+  *Firebase Rules Admin* e *Service Usage Consumer*.
+
+## Consumo estimado do plano gratuito (Spark)
+
+Limites do Spark consultados em 10/2026 (confira em https://firebase.google.com/pricing):
+Firestore com 50 mil leituras, 20 mil gravações e 20 mil exclusões por dia e 1 GiB
+guardado; Hosting com 10 GB guardados e 360 MB de transferência por dia.
+
+Suposição: um dia movimentado com 30 saídas, 30 sobras, 5 gastos, 10 correções e o app
+aberto umas 20 vezes.
+
+| Recurso | Estimativa por dia | Limite diário | Uso |
+|---|---|---|---|
+| Gravações | ~80 | 20.000 | ~0,4% |
+| Leituras | ~2.000 | 50.000 | ~4% |
+| Dados guardados | ~25 KB a mais por dia (~9 MB por ano) | 1 GiB no total | < 1% ao ano |
+| Transferência do Hosting | ~1,5 MB na 1ª visita, quase nada depois (cache) | 360 MB | < 1% |
+
+De onde vêm as leituras: ao entrar, os cadastros são lidos uma vez (alimentos,
+recipientes e taxa) e ficam em memória; cada tela de dia lê só as saídas, as sobras e a
+observação daquela data; Gastos lê só o período filtrado; cada saída gravada custa 2
+leituras extras nas regras (conferem se o alimento e o recipiente existem). O app nunca
+lista coleções inteiras de saídas ou gastos. O PDF usa os dados já carregados na tela.
+
+GitHub Actions: cada deploy leva uns 3 a 5 minutos (os testes incluídos). Em repositório
+privado o GitHub dá 2.000 minutos grátis por mês.
+
+## Checklist depois do deploy
+
+1. Abra https://dudusistemas.web.app: aparece a tela de login com o logo.
+2. Numa aba anônima, sem login, nenhuma tela além do login aparece.
+3. Entre com a sua conta: abre Pesagem > Registrar saída.
+4. Cadastros > **Criar dados iniciais**: aparecem os 6 recipientes e a taxa de 30%.
+5. Cadastre um alimento de teste, registre uma saída e confira o visor. Depois registre a
+   sobra, veja o dia em Hoje, gere o PDF em Relatórios e adicione um gasto, conferindo o
+   total.
+6. Apague os dados de teste (saída, gasto e alimento).
+7. No console do Firebase, em Firestore > Regras, as regras publicadas têm o seu UID e
+   não são `allow read, write: if false`.
+8. No console, em Uso e faturamento, o plano continua **Spark**, sem cartão.
+9. Opcional: crie uma segunda conta em Authentication, entre com ela no app (deve aparecer
+   "Sem permissão") e depois apague essa conta.
 
 ## Desenvolvimento
 
 ```bash
 npm test                 # testes (Vitest)
-npm run test:emulador    # testes que sobem os emuladores sozinhos (login; regras na etapa 4)
+npm run test:emulador    # testes no emulador: login, regras de segurança, dados e gastos
 npm run emuladores       # terminal 1: emuladores de Auth + Firestore (projeto demo)
 npm run dev:emulador     # terminal 2: app ligado aos emuladores
 npm run dev              # app ligado ao projeto REAL (exige firebase-config.js preenchido)
