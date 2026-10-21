@@ -1,0 +1,135 @@
+rules_version = '2';
+
+// Regras de segurança do Firestore. Só o UID do dono lê e escreve, e tudo que não
+// estiver listado aqui é negado (o Firestore nega o que nenhuma regra libera).
+//
+// Os valores (pesos, preços, taxa, dinheiro) são STRING com ponto decimal, nunca number.
+// O que estas regras NÃO garantem está explicado no README.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Quem pode ----------------------------------------------------------
+    function dono() {
+      return request.auth != null && request.auth.uid == 'tPaDPlz9bsX9gZAfx6d0LkrPGSN2';
+    }
+
+    // ---- Validações reutilizadas -------------------------------------------
+    function dados() { return request.resource.data; }
+
+    function camposExatos(campos) {
+      return dados().keys().hasAll(campos) && dados().keys().hasOnly(campos);
+    }
+
+    function texto(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    // Decimal >= 0 como string: "3", "3.8", "0.25". Sem sinal, vírgula ou expoente.
+    function decimal(v) {
+      return v is string && v.matches('^[0-9]{1,9}([.][0-9]{1,6})?$');
+    }
+
+    function decimalPositivo(v) {
+      return decimal(v) && !v.matches('^0+([.]0+)?$');
+    }
+
+    // Dinheiro: > 0 e no máximo 2 casas.
+    function dinheiro(v) {
+      return decimalPositivo(v) && v.matches('^[0-9]{1,9}([.][0-9]{1,2})?$');
+    }
+
+    // AAAA-MM-DD com mês 01-12 e dia 01-31 (não confere 30/02).
+    function data(v) {
+      return v is string && v.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
+    }
+
+    // criado_em vem do servidor na criação e nunca muda depois.
+    function criadoEmValido() {
+      return request.method == 'create'
+        ? dados().criado_em == request.time
+        : dados().criado_em == resource.data.criado_em;
+    }
+
+    function existe(colecao, id) {
+      return id is string && exists(/databases/$(database)/documents/$(colecao)/$(id));
+    }
+
+    // ---- Coleções -----------------------------------------------------------
+    match /recipientes/{id} {
+      allow read, delete: if dono();
+      allow create, update: if dono()
+        && camposExatos(['nome', 'tara'])
+        && texto(dados().nome, 1, 60)
+        && decimal(dados().tara);
+    }
+
+    match /alimentos/{id} {
+      allow read, delete: if dono();
+      allow create, update: if dono()
+        && camposExatos(['nome', 'preco_kg', 'recipiente_padrao_id'])
+        && texto(dados().nome, 1, 60)
+        && decimalPositivo(dados().preco_kg)
+        && (dados().recipiente_padrao_id == null
+            || existe('recipientes', dados().recipiente_padrao_id));
+    }
+
+    match /configuracao/{id} {
+      allow read: if dono();
+      allow create, update: if dono()
+        && id == 'taxa'
+        && camposExatos(['valor'])
+        && decimal(dados().valor);
+    }
+
+    match /saidas/{id} {
+      allow read: if dono();
+      allow create, update: if dono()
+        && camposExatos(['data', 'alimento_id', 'alimento_nome', 'recipiente_id',
+                         'recipiente_nome', 'peso_bruto', 'tara', 'preco_kg', 'taxa',
+                         'criado_em'])
+        && data(dados().data)
+        && existe('alimentos', dados().alimento_id)
+        && existe('recipientes', dados().recipiente_id)
+        && texto(dados().alimento_nome, 1, 60)
+        && texto(dados().recipiente_nome, 1, 60)
+        && decimalPositivo(dados().peso_bruto)
+        && decimal(dados().tara)
+        && decimalPositivo(dados().preco_kg)
+        && decimal(dados().taxa)
+        && criadoEmValido();
+      // Só apaga a saída se a sobra dela também sumir na mesma operação.
+      allow delete: if dono()
+        && !existsAfter(/databases/$(database)/documents/sobras/$(id));
+    }
+
+    // O ID da sobra é o ID da saída: no máximo uma sobra por saída.
+    match /sobras/{saidaId} {
+      allow read, delete: if dono();
+      allow create, update: if dono()
+        && existe('saidas', saidaId)
+        && camposExatos(['peso_bruto', 'criado_em'])
+        && decimal(dados().peso_bruto)
+        && criadoEmValido();
+    }
+
+    match /observacoes_dia/{dia} {
+      allow read, delete: if dono();
+      allow create, update: if dono()
+        && data(dia)
+        && camposExatos(['texto'])
+        && texto(dados().texto, 0, 2000);
+    }
+
+    match /gastos/{id} {
+      allow read, delete: if dono();
+      allow create, update: if dono()
+        && camposExatos(['descricao', 'data_pagamento', 'valor', 'forma_pagamento', 'criado_em'])
+        && texto(dados().descricao, 1, 100)
+        && data(dados().data_pagamento)
+        && dinheiro(dados().valor)
+        && dados().forma_pagamento in ['Dinheiro', 'Pix', 'Cartão de débito',
+                                       'Cartão de crédito', 'Boleto', 'Transferência']
+        && criadoEmValido();
+    }
+  }
+}

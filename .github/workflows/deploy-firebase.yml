@@ -1,0 +1,67 @@
+# Publica o app no Firebase (plano Spark): Hosting + regras do Firestore.
+# Só publica se todos os testes passarem. A chave fica no secret
+# FIREBASE_SERVICE_ACCOUNT do repositório e nunca vai para o código.
+name: Deploy no Firebase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-firebase.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-firebase
+  cancel-in-progress: false
+
+jobs:
+  testar-e-publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # Java é necessário para os emuladores do Firebase nos testes.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Testes no emulador (regras de segurança reais)
+        run: npm run test:emulador
+
+      - name: Build
+        run: npx vite build
+
+      - name: Publicar Hosting e regras do Firestore
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Secret FIREBASE_SERVICE_ACCOUNT não configurado no repositório."
+            exit 1
+          fi
+          CHAVE="$RUNNER_TEMP/conta-servico.json"
+          trap 'rm -f "$CHAVE"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CHAVE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$CHAVE"
+          npx firebase deploy --only hosting,firestore:rules --project dudusistemas --non-interactive
