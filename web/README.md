@@ -61,8 +61,7 @@ ou de "upgrade para o plano Blaze", recuse**: tudo deste app funciona no Spark.
 cd web
 npm install                    # instala as dependências (inclui o firebase-tools)
 npx firebase login             # abre o navegador para entrar com a sua conta Google
-npx firebase use --add         # escolha o projeto criado e dê o apelido "default"
-                               # (cria o arquivo .firebaserc, que pode ser commitado)
+npx firebase use dudusistemas   # projeto já configurado em .firebaserc
 ```
 
 O deploy (`npm run deploy`) só será feito na etapa 9.

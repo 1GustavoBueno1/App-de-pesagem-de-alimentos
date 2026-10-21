@@ -5,10 +5,10 @@
 // Copie os valores de: Console do Firebase > Configurações do projeto >
 // Seus apps > App da Web > "Configuração do SDK" (opção "Config").
 export const firebaseConfig = {
-  apiKey: 'COLE_AQUI',
-  authDomain: 'COLE_AQUI',
-  projectId: 'COLE_AQUI',
-  storageBucket: 'COLE_AQUI',
-  messagingSenderId: 'COLE_AQUI',
-  appId: 'COLE_AQUI',
+  apiKey: 'AIzaSyAIFVjiz0TADxu8RoCepSbkxnUFehGT-uk',
+  authDomain: 'dudusistemas.firebaseapp.com',
+  projectId: 'dudusistemas',
+  storageBucket: 'dudusistemas.firebasestorage.app',
+  messagingSenderId: '1045613008931',
+  appId: '1:1045613008931:web:cb631d6e17f6bf2e4b7996',
 };
