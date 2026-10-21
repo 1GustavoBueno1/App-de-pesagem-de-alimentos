@@ -94,6 +94,15 @@ export function percentualSobra(sobra, saida) {
   return sobra.div(saida).times(100).toDecimalPlaces(1, Decimal.ROUND_HALF_UP);
 }
 
+/** Lê um número >= 0 (tara, taxa, peso bruto da sobra). */
+export function lerNaoNegativo(texto, campo) {
+  const valor = lerNumero(texto, campo);
+  if (valor.lt(0)) {
+    throw new Error(`${campo}: não pode ser menor que zero.`);
+  }
+  return valor;
+}
+
 /** Lê um valor em reais digitado pelo usuário: > 0 e no máximo 2 casas decimais. */
 export function lerValor(texto, campo = 'Valor') {
   const valor = lerNumero(texto, campo);

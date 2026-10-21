@@ -1,36 +1,37 @@
 // Estrutura do app depois do login: barra do topo, navegação e botão Sair.
+// Rotas pelo hash: #pesagem/saida, #pesagem/hoje, #cadastros, #gastos...
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase.js';
 import { el, trocar } from '../dom.js';
+import { telaPesagem } from './pesagem.js';
+import { telaCadastros } from './cadastros.js';
 
 const SECOES = [
-  { id: 'pesagem', nome: 'Pesagem', etapa: 6 },
-  { id: 'gastos', nome: 'Gastos', etapa: 8 },
-  { id: 'cadastros', nome: 'Cadastros', etapa: 5 },
+  { id: 'pesagem', nome: 'Pesagem', tela: (repo, sub) => telaPesagem(repo, sub) },
+  {
+    id: 'gastos',
+    nome: 'Gastos',
+    tela: () => el('div', {}, el('h2', {}, 'Gastos'), el('p', { class: 'aviso' }, 'Esta tela será construída na etapa 8.')),
+  },
+  { id: 'cadastros', nome: 'Cadastros', tela: (repo) => telaCadastros(repo) },
 ];
 
-function secaoAtual() {
-  const id = location.hash.slice(1);
-  return SECOES.find((s) => s.id === id) ?? SECOES[0];
+function rotaAtual() {
+  const [id, sub] = location.hash.slice(1).split('/');
+  return { secao: SECOES.find((s) => s.id === id) ?? SECOES[0], sub };
 }
 
-export function telaApp(usuario) {
+export function telaApp(usuario, repo) {
   const conteudo = el('main', { id: 'conteudo', tabindex: '-1' });
-  const botoes = SECOES.map((s) =>
-    el('a', { href: `#${s.id}`, class: 'aba', 'data-secao': s.id }, s.nome),
-  );
+  const botoes = SECOES.map((s) => el('a', { href: `#${s.id}`, class: 'aba', 'data-secao': s.id }, s.nome));
 
   function mostrar() {
-    const secao = secaoAtual();
+    const { secao, sub } = rotaAtual();
     for (const b of botoes) {
       if (b.dataset.secao === secao.id) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
     }
-    trocar(
-      conteudo,
-      el('h2', {}, secao.nome),
-      el('p', { class: 'aviso' }, `Esta tela será construída na etapa ${secao.etapa}.`),
-    );
+    trocar(conteudo, secao.tela(repo, sub));
   }
 
   const sair = el(

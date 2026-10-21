@@ -122,3 +122,46 @@ button.primario {
   .topo nav { order: 3; flex-basis: 100%; }
   .usuario { display: none; }
 }
+
+/* Etapas 5 e 6: cadastros e pesagem */
+h2 { margin: 0.5rem 0 1rem; }
+h3 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+.pilha { display: grid; gap: 1rem; }
+.pilha > * { min-width: 0; } /* sem isto a tabela alarga o cartão e a página rola de lado */
+.formulario { max-width: 520px; }
+.formulario button[type='submit'] { margin-top: 1rem; width: 100%; }
+.linha-form { display: flex; flex-wrap: wrap; gap: 0 0.75rem; align-items: flex-end; margin-bottom: 1rem; }
+.linha-form .campo { flex: 1 1 180px; }
+.linha-form > button { margin-top: 0.75rem; }
+.botoes { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.campo label { margin-top: 0.75rem; }
+.previa { color: var(--suave); min-height: 1.45em; margin: 0.75rem 0 0; }
+.aviso-acao { min-height: 1.45em; margin: 0 0 0.75rem; font-weight: 600; }
+.aviso-acao.ok { color: var(--primaria); }
+.aviso-acao.erro { color: var(--erro); }
+.texto-livre { white-space: pre-wrap; margin: 0; }
+textarea { resize: vertical; }
+
+button.perigo { background: var(--erro); border-color: var(--erro); color: #fff; font-weight: 600; }
+button.perigo-leve { color: var(--erro); }
+
+.subabas { display: flex; gap: 0.25rem; overflow-x: auto; margin-bottom: 1rem; border-bottom: 1px solid var(--borda); padding-bottom: 0.5rem; }
+
+.tabela-rolagem { overflow-x: auto; background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+thead th { font-size: 0.85rem; color: var(--suave); white-space: nowrap; }
+tfoot th, tfoot td { font-weight: 700; border-bottom: 0; }
+td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.acoes { min-width: 12rem; }
+td.acoes button { min-height: 36px; padding: 0.25rem 0.6rem; margin: 0.1rem; }
+
+.janela { border: 1px solid var(--borda); border-radius: 10px; background: var(--cartao); color: var(--texto); padding: 1.25rem; width: min(480px, calc(100vw - 32px)); }
+.janela::backdrop { background: rgb(0 0 0 / 0.45); }
+.janela .botoes { justify-content: flex-end; }
+
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-color-scheme: dark) {
+  button.perigo { color: #1a0505; }
+}

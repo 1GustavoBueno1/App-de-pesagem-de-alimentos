@@ -10,6 +10,7 @@ import {
   percentualSobra,
   lerValor,
   totalGastos,
+  lerNaoNegativo,
 } from '../src/calculos.js';
 
 // Igualdade numérica de Decimal (como == no Python).
@@ -130,4 +131,14 @@ describe('totalGastos (novo)', () => {
   it('rejeita item inválido dizendo a posição', () =>
     expect(() => totalGastos(['1', 'x'])).toThrow('Gasto nº 2: "x" não é um número válido.'));
   it('rejeita Number', () => expect(() => totalGastos([1.5])).toThrow(Error));
+});
+
+describe('lerNaoNegativo (novo: tara, taxa e peso bruto da sobra)', () => {
+  it('aceita zero', () => igual(lerNaoNegativo('0', 'Tara'), '0'));
+  it('aceita vírgula', () => igual(lerNaoNegativo('3,8', 'Tara'), '3.8'));
+  it('rejeita negativo', () => expect(() => lerNaoNegativo('-1', 'Tara')).toThrow('Tara: não pode ser menor que zero.'));
+  it('rejeita vazio e texto', () => {
+    expect(() => lerNaoNegativo('', 'Tara')).toThrow('Tara: informe um valor.');
+    expect(() => lerNaoNegativo('x', 'Tara')).toThrow(Error);
+  });
 });

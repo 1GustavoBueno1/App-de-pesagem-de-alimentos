@@ -1,8 +1,7 @@
 # App de custos da cozinha: design
 
-> **Status: RASCUNHO escrito pelo Claude em 21/10/2026**, porque o documento original
-> não existia. Precisa da aprovação do Gustavo antes das etapas 6 e 7. Os pontos em
-> aberto estão na seção 9.
+> Escrito pelo Claude em 21/10/2026, porque o documento original não existia. As
+> decisões da seção 9 foram respondidas pelo Gustavo em 21/10/2026.
 
 ## 1. Objetivo
 
@@ -59,15 +58,17 @@ o custo de produção (com a taxa atual). **Enter** registra. Depois de salvar a
 Prévia: sobra em kg e % de sobra. **Enter** registra.
 
 ### 4.3 Hoje
-- Tabela das saídas de hoje: Alimento | Recipiente | Peso líquido | Custo de produção |
+- Abre no dia de hoje, mas tem um campo **Dia** para escolher outra data e corrigir
+  dias anteriores (decisão 3).
+- Tabela das saídas do dia: Alimento | Recipiente | Peso líquido | Custo de produção |
   Sobra | % sobra | ações.
 - **Editar saída**: alimento, recipiente e peso bruto. Se trocar o alimento ou o
-  recipiente, copia o preço ou a tara **atuais** do cadastro. A taxa copiada não muda.
+  recipiente, o preço ou a tara **atuais** do cadastro são preenchidos. Preço/kg, tara e
+  taxa continuam editáveis à mão (decisão 2).
 - **Editar sobra** e **apagar sobra**.
 - **Apagar saída**: pede confirmação e apaga a sobra junto, na mesma transação.
-- **Totais do dia**: peso líquido total, custo de produção total, sobra total e % de
-  sobra geral (soma das sobras ÷ soma das saídas **que têm sobra registrada**), mais a
-  quantidade de sobras pendentes.
+- **Totais do dia**: peso líquido total, custo de produção total e sobra total. O % de
+  sobra aparece **só em cada saída**, sem % geral (decisão 4).
 - **Observação do dia**: campo de texto com botão Salvar (documento
   `observacoes_dia/AAAA-MM-DD`).
 
@@ -96,16 +97,15 @@ Gerado no navegador (jsPDF + jspdf-autotable), em A4 retrato com margens de 15 m
    "Gerado em DD/MM/AAAA HH:MM".
 2. **Tabela de produção**: Alimento | Recipiente | Peso líquido (kg) | Preço/kg (R$) |
    Custo de produção (R$) | Sobra (kg) | % sobra. Saída sem sobra mostra "—".
-3. **Linha de totais**: peso líquido total, custo de produção total, sobra total e
-   % de sobra geral.
+3. **Linha de totais**: peso líquido total, custo de produção total e sobra total
+   (sem % geral).
 4. **Taxa aplicada**: se todas as saídas usaram a mesma taxa, "Taxa: 30%". Se não,
    "Taxas variadas".
 5. **Observação do dia**: só aparece se houver.
 6. **Gastos do dia**: seção separada, **só se houver gastos** com data de pagamento
    igual ao dia. Colunas Descrição | Forma de pagamento | Valor, e o total.
-7. **Caber em uma página**: a fonte começa em 9 pt e diminui até 7 pt conforme o número
-   de linhas. Se nem assim couber, o app avisa e não gera o PDF, em vez de gerar duas
-   páginas.
+7. **Páginas**: o objetivo é caber em uma página A4. Se houver linhas demais, o PDF
+   continua numa segunda página, repetindo o cabeçalho da tabela (decisão 5).
 
 Nome do arquivo: `relatorio-AAAA-MM-DD.pdf`.
 
@@ -126,13 +126,12 @@ Nome do arquivo: `relatorio-AAAA-MM-DD.pdf`.
 Gráficos, histórico de alterações, multiusuário, cadastro de contas e tudo que exija o
 plano pago.
 
-## 9. Decisões em aberto (confirme ou mude)
+## 9. Decisões (respondidas em 21/10/2026)
 
-1. A sobra é pesada **no mesmo recipiente** da saída. Se às vezes vai para outro
-   recipiente, a tela precisa de um campo "recipiente da sobra".
-2. Ao editar uma saída, trocar o alimento ou o recipiente copia os valores **atuais** do
-   cadastro.
-3. "Hoje" edita **só o dia de hoje**. Os outros dias ficam só para leitura em Relatórios.
-4. O % de sobra geral considera só as saídas que já têm sobra registrada.
-5. O PDF tem limite de uma página: se houver linhas demais, o app avisa em vez de
-   quebrar em duas páginas.
+1. A sobra é pesada **no mesmo recipiente** da saída. **Sim.**
+2. Ao editar uma saída, trocar o alimento ou o recipiente preenche os valores atuais do
+   cadastro. **Sim, mas podendo trocar:** preço/kg, tara e taxa ficam editáveis.
+3. "Hoje" edita o dia de hoje. **Sim, mas com uma forma de editar dias anteriores:** a tela
+   tem um campo de data.
+4. % de sobra geral. **Só por saída:** não existe % geral do dia.
+5. PDF com linhas demais. **Pode gerar duas páginas.**
