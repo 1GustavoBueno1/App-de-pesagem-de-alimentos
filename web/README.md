@@ -70,6 +70,7 @@ O deploy (`npm run deploy`) só será feito na etapa 9.
 
 ```bash
 npm test                 # testes (Vitest)
+npm run test:emulador    # testes que sobem os emuladores sozinhos (login; regras na etapa 4)
 npm run emuladores       # terminal 1: emuladores de Auth + Firestore (projeto demo)
 npm run dev:emulador     # terminal 2: app ligado aos emuladores
 npm run dev              # app ligado ao projeto REAL (exige firebase-config.js preenchido)

@@ -10,7 +10,8 @@
     "test": "vitest run",
     "dev:emulador": "vite --mode emulador",
     "emuladores": "firebase emulators:start --project demo-custos-cozinha",
-    "deploy": "npm test && vite build && firebase deploy --only hosting,firestore"
+    "deploy": "npm test && vite build && firebase deploy --only hosting,firestore",
+    "test:emulador": "firebase emulators:exec --only auth,firestore --project demo-custos-cozinha \"vitest run --config vitest.emulador.config.js\""
   },
   "dependencies": {
     "decimal.js": "^10.6.0",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "firebase-tools": "^15.34.0",
+    "linkedom": "^0.18.14",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
   }
