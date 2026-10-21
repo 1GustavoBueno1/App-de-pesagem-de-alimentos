@@ -4,14 +4,17 @@ import { el } from '../dom.js';
 import { D, lerNaoNegativo, pesoLiquido, percentualSobra } from '../calculos.js';
 import { diaSP } from '../datas.js';
 import { peso, percentual } from '../formato.js';
-import { campoData, campoSelecao, campoTexto, preencherOpcoes, criarAviso, executar, traduzirErro } from '../ui.js';
+import { campoData, campoSelecao, campoTexto, preencherOpcoes, criarAviso, executar, traduzirErro, criarVisor } from '../ui.js';
 
 export function telaSobra(repo) {
   const aviso = criarAviso();
   const data = campoData('Data', diaSP());
   const saida = campoSelecao('Saída');
   const pesoBruto = campoTexto('Peso bruto da sobra (kg)', { decimal: true });
-  const previa = el('p', { class: 'previa', 'aria-live': 'polite' });
+  const visor = criarVisor([
+    { chave: 'sobra', rotulo: 'Sobra' },
+    { chave: 'pct', rotulo: 'Da saída' },
+  ]);
   const botao = el('button', { type: 'submit', class: 'primario' }, 'Registrar sobra');
   let pendentes = [];
 
@@ -32,16 +35,16 @@ export function telaSobra(repo) {
   }
 
   function atualizarPrevia() {
-    previa.textContent = '';
     const s = pendentes.find((x) => x.id === saida.input.value);
+    visor.definir(null);
     if (!s) return;
     const tara = D(s.tara);
-    const dica = `Tara do recipiente: ${peso(tara)}.`;
-    previa.textContent = dica;
+    const nota = `Pese no mesmo recipiente: ${s.recipiente_nome}, tara ${peso(tara)}`;
+    visor.definir(null, nota);
     try {
       const kg = lerNaoNegativo(pesoBruto.input.value, 'Peso').minus(tara);
       const pct = percentualSobra(kg, pesoLiquido(D(s.peso_bruto), tara));
-      previa.textContent = `${dica} Sobra ${peso(kg)} · ${percentual(pct)} da saída`;
+      visor.definir({ sobra: peso(kg), pct: percentual(pct) }, nota);
     } catch {
       // incompleto ou inválido: o erro aparece ao registrar
     }
@@ -57,7 +60,7 @@ export function telaSobra(repo) {
     data.bloco,
     saida.bloco,
     pesoBruto.bloco,
-    previa,
+    visor.elemento,
     botao,
   );
   form.addEventListener('submit', (e) => {

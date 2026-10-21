@@ -15,6 +15,7 @@ import {
   traduzirErro,
   confirmar,
   tabela,
+  criarVisor,
 } from '../ui.js';
 
 export function telaGastos(repo) {
@@ -82,17 +83,16 @@ export function telaGastos(repo) {
     executar(aviso, filtrar, desenhar);
   });
 
-  const total = el('p', { class: 'total-destaque', 'aria-live': 'polite' });
+  const visorTotal = criarVisor([{ chave: 'total', rotulo: 'Total do período' }], { destaque: true });
   const area = el('div', {});
 
   async function desenhar() {
     const lista = await repo.gastosDoPeriodo(inicio.input.value, fim.input.value);
     // O total é a soma exatamente das linhas exibidas abaixo.
     const soma = totalGastos(lista.map((g) => g.valor));
-    trocar(
-      total,
-      el('span', {}, `Total de ${formatarData(inicio.input.value)} a ${formatarData(fim.input.value)}`),
-      el('strong', {}, dinheiro(soma)),
+    visorTotal.definir(
+      { total: dinheiro(soma) },
+      `${formatarData(inicio.input.value)} a ${formatarData(fim.input.value)} · ${lista.length} ${lista.length === 1 ? 'gasto' : 'gastos'}`,
     );
     const linhas = lista.map((g) =>
       el(
@@ -155,6 +155,6 @@ export function telaGastos(repo) {
     el('h2', {}, 'Gastos'),
     aviso.elemento,
     form,
-    el('section', { class: 'pilha' }, el('div', {}, filtro, total), area),
+    el('section', { class: 'pilha' }, el('div', {}, filtro, visorTotal.elemento), area),
   );
 }

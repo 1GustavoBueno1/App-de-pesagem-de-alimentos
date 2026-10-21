@@ -51,6 +51,23 @@ Cloud Run nem faturamento.
 8. **Backup.** O plano Spark não tem backup automático, e as rules não protegem contra
    o próprio dono apagar dados.
 
+## Proteções no navegador
+
+- **Sem `innerHTML`**: todo texto digitado é exibido com `textContent` (`src/dom.js` recusa
+  `innerHTML`). Um nome como `<img src=x onerror=alert(1)>` aparece como texto.
+- **Cabeçalhos de segurança** (`firebase.json`, aplicados pelo Firebase Hosting):
+  - `Content-Security-Policy`: scripts, estilos, fontes e imagens só do próprio site;
+    conexões só com o Firestore e o Authentication do Google; sem `eval`, sem plugins.
+  - `frame-ancestors 'none'` e `X-Frame-Options: DENY`: o app não pode ser embutido em
+    outro site (contra *clickjacking*).
+  - `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+    `Permissions-Policy` (câmera, microfone e localização desligados) e HSTS.
+- **Fontes e logo servidos pelo próprio app**: nenhum pedido a Google Fonts ou a outros
+  servidores. O Vite não embute arquivos como `data:` (`vite.config.js`), para a CSP
+  poder ser estrita.
+- A CSP foi testada com o build de produção servido pelo emulador do Hosting: login,
+  telas, PDF e gastos funcionaram sem nenhuma violação.
+
 ## Pré-requisitos
 
 - Node.js 20 ou mais novo (`node -v`).

@@ -49,8 +49,9 @@ export function telaLogin() {
 
   const formulario = el(
     'form',
-    { class: 'cartao login', novalidate: true, onsubmit: entrar },
-    el('h1', {}, 'Custos da Cozinha'),
+    { class: 'cartao', novalidate: true, onsubmit: entrar },
+    el('h1', {}, 'Custos da cozinha'),
+    el('p', { class: 'aviso' }, 'Entre com o e-mail e a senha da conta da Dudu.'),
     el('label', { for: 'login-email' }, 'E-mail'),
     email,
     el('label', { for: 'login-senha' }, 'Senha'),
@@ -59,5 +60,14 @@ export function telaLogin() {
     botao,
   );
   queueMicrotask(() => email.focus());
-  return el('main', { class: 'centro' }, formulario);
+  return el(
+    'main',
+    { class: 'tela-login' },
+    el(
+      'div',
+      { class: 'login' },
+      el('img', { class: 'login-logo', src: '/logo-dudu.png', alt: 'Dudu Bebidas', width: 168, height: 168 }),
+      formulario,
+    ),
+  );
 }

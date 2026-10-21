@@ -17,6 +17,7 @@ import {
   confirmar,
   janelaFormulario,
   tabela,
+  criarVisor,
 } from '../ui.js';
 
 const virgula = (texto) => texto.replace('.', ',');
@@ -42,13 +43,25 @@ export function telaDia(repo, { editavel }) {
     carregado = { dia, saidas, sobras, observacao: obs, gastos };
     trocar(
       area,
-      linhas.length ? tabelaDoDia(linhas, totais, sobras) : el('p', { class: 'aviso' }, 'Nenhuma saída nesta data.'),
+      linhas.length ? visorTotais(totais) : null,
+      linhas.length ? tabelaDoDia(linhas, sobras) : el('p', { class: 'aviso' }, 'Nenhuma saída nesta data.'),
       editavel ? cartaoObservacao(dia, obs) : obs ? el('section', { class: 'cartao' }, el('h3', {}, 'Observação do dia'), el('p', { class: 'texto-livre' }, obs)) : null,
       gastos.length ? secaoGastos(gastos) : null,
     );
   }
 
-  function tabelaDoDia(linhas, totais, sobras) {
+  function visorTotais(totais) {
+    const visor = criarVisor([
+      { chave: 'liquido', rotulo: 'Peso líquido do dia' },
+      { chave: 'custo', rotulo: 'Custo de produção' },
+      { chave: 'sobra', rotulo: 'Sobra total' },
+    ]);
+    visor.definir({ liquido: peso(totais.liquido), custo: dinheiro(totais.custo), sobra: peso(totais.sobra) });
+    visor.elemento.classList.add('visor-topo');
+    return visor.elemento;
+  }
+
+  function tabelaDoDia(linhas, sobras) {
     const cab = ['Alimento', 'Recipiente', 'Peso líquido', ...(editavel ? [] : ['Preço/kg', 'Taxa']), 'Custo de produção', 'Sobra', '% sobra'];
     if (editavel) cab.push('Ações');
     const corpo = linhas.map((l) => {
@@ -67,18 +80,7 @@ export function telaDia(repo, { editavel }) {
         editavel ? el('td', { class: 'acoes' }, acoesDaLinha(s, sobras.get(s.id))) : null,
       );
     });
-    const rodape = el(
-      'tr',
-      {},
-      el('th', { scope: 'row', colspan: 2 }, 'Totais'),
-      el('td', { class: 'num' }, peso(totais.liquido)),
-      editavel ? null : el('td', { colspan: 2 }),
-      el('td', { class: 'num' }, dinheiro(totais.custo)),
-      el('td', { class: 'num' }, peso(totais.sobra)),
-      el('td', {}),
-      editavel ? el('td', {}) : null,
-    );
-    return tabela(cab, corpo, rodape);
+    return tabela(cab, corpo);
   }
 
   function secaoGastos(gastos) {

@@ -3,7 +3,7 @@ import { el } from '../dom.js';
 import { D, lerPeso, pesoLiquido, custoAlimento, custoProducao } from '../calculos.js';
 import { diaSP } from '../datas.js';
 import { dinheiro, peso, taxaPercentual } from '../formato.js';
-import { campoData, campoSelecao, campoTexto, preencherOpcoes, criarAviso, executar, traduzirErro } from '../ui.js';
+import { campoData, campoSelecao, campoTexto, preencherOpcoes, criarAviso, executar, traduzirErro, criarVisor } from '../ui.js';
 
 export function telaSaida(repo) {
   const aviso = criarAviso();
@@ -11,7 +11,11 @@ export function telaSaida(repo) {
   const alimento = campoSelecao('Alimento');
   const recipiente = campoSelecao('Recipiente');
   const pesoBruto = campoTexto('Peso bruto (kg)', { decimal: true });
-  const previa = el('p', { class: 'previa', 'aria-live': 'polite' });
+  const visor = criarVisor([
+    { chave: 'liquido', rotulo: 'Peso líquido' },
+    { chave: 'alimento', rotulo: 'Custo do alimento' },
+    { chave: 'producao', rotulo: 'Custo de produção' },
+  ]);
   const botao = el('button', { type: 'submit', class: 'primario' }, 'Registrar saída');
   let alimentos = [];
   let recipientes = [];
@@ -40,19 +44,23 @@ export function telaSaida(repo) {
   recipiente.input.addEventListener('change', atualizarPrevia);
   pesoBruto.input.addEventListener('input', atualizarPrevia);
 
-  // Prévia silenciosa: só aparece quando os dados já formam uma saída válida.
+  // Visor silencioso: só mostra números quando os dados já formam uma saída válida.
   function atualizarPrevia() {
-    previa.textContent = '';
     const a = alimentos.find((x) => x.id === alimento.input.value);
     const r = recipientes.find((x) => x.id === recipiente.input.value);
+    const nota = r ? `Tara de ${r.nome}: ${peso(r.tara)}` + (taxa === null ? '' : ` · taxa ${taxaPercentual(taxa)}`) : '';
+    visor.definir(null, nota);
     if (!a || !r || taxa === null) return;
     try {
       const liquido = pesoLiquido(lerPeso(pesoBruto.input.value), D(r.tara));
-      const custoA = custoAlimento(liquido, D(a.preco_kg));
-      const custoP = custoProducao(liquido, D(a.preco_kg), D(taxa));
-      previa.textContent =
-        `Peso líquido ${peso(liquido)} · Custo do alimento ${dinheiro(custoA)} · ` +
-        `Custo de produção ${dinheiro(custoP)} (taxa ${taxaPercentual(taxa)})`;
+      visor.definir(
+        {
+          liquido: peso(liquido),
+          alimento: dinheiro(custoAlimento(liquido, D(a.preco_kg))),
+          producao: dinheiro(custoProducao(liquido, D(a.preco_kg), D(taxa))),
+        },
+        nota,
+      );
     } catch {
       // Ainda incompleto ou inválido: o erro aparece ao registrar.
     }
@@ -65,7 +73,7 @@ export function telaSaida(repo) {
     alimento.bloco,
     recipiente.bloco,
     pesoBruto.bloco,
-    previa,
+    visor.elemento,
     botao,
   );
   form.addEventListener('submit', (e) => {
@@ -79,7 +87,7 @@ export function telaSaida(repo) {
       });
       aviso.ok(`Saída registrada: ${s.alimento_nome}, ${pesoBruto.input.value.trim()} kg bruto.`);
       pesoBruto.input.value = '';
-      previa.textContent = '';
+      atualizarPrevia();
       alimento.input.focus();
     });
   });

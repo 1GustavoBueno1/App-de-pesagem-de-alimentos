@@ -1,4 +1,9 @@
 // Ponto de entrada: toda tela exige login. Sem usuário, só existe a tela de login.
+// Fontes servidas pelo próprio app (sem Google Fonts): nada de servidor externo.
+import '@fontsource/dm-serif-display/latin-400.css';
+import '@fontsource-variable/manrope/wght.css';
+import '@fontsource/ibm-plex-mono/latin-500.css';
+import '@fontsource/ibm-plex-mono/latin-600.css';
 import './estilo.css';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from './firebase.js';

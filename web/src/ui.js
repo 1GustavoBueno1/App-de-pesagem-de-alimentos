@@ -116,15 +116,59 @@ export function janelaFormulario(titulo, montar) {
   return janela;
 }
 
-/** Tabela com rolagem própria (não cria rolagem horizontal na página). */
+/**
+ * Visor no estilo de balança: painel com rótulos e valores grandes.
+ * campos: [{ chave, rotulo }]. definir({ chave: 'texto' } | null, nota?) troca os valores.
+ */
+export function criarVisor(campos, { destaque = false } = {}) {
+  const valores = new Map();
+  const celulas = campos.map(({ chave, rotulo }) => {
+    const valor = el('span', { class: 'visor-valor vazio' }, '—');
+    valores.set(chave, valor);
+    return el('div', { class: 'visor-celula' }, el('span', { class: 'visor-rotulo' }, rotulo), valor);
+  });
+  const nota = el('p', { class: 'visor-nota' });
+  const elemento = el(
+    'div',
+    { class: destaque ? 'visor visor-destaque' : 'visor', role: 'status', 'aria-live': 'polite' },
+    el('div', { class: 'visor-celulas' }, celulas),
+    nota,
+  );
+  return {
+    elemento,
+    definir(dados, textoNota = '') {
+      for (const [chave, valor] of valores) {
+        const texto = dados?.[chave];
+        valor.textContent = texto ?? '—';
+        valor.classList.toggle('vazio', texto === undefined || texto === null);
+      }
+      nota.textContent = textoNota;
+    },
+  };
+}
+
+/**
+ * Tabela com rolagem própria. No celular vira cartões: cada célula recebe o nome da
+ * coluna em data-rotulo, mostrado pelo CSS (attr() só exibe texto, nunca HTML).
+ */
 export function tabela(cabecalhos, linhas, rodape = null) {
+  // Coluna numérica (td.num na primeira linha) também alinha o título à direita.
+  const numericas = new Set();
+  [...(linhas[0]?.children ?? [])].forEach((c, i) => c.classList.contains('num') && numericas.add(i));
+  for (const tr of linhas) {
+    let coluna = 0;
+    for (const celula of tr.children) {
+      if (celula.tagName === 'TD' && cabecalhos[coluna]) celula.dataset.rotulo = cabecalhos[coluna];
+      coluna += Number(celula.getAttribute('colspan') ?? 1);
+    }
+  }
   return el(
     'div',
     { class: 'tabela-rolagem' },
     el(
       'table',
       {},
-      el('thead', {}, el('tr', {}, cabecalhos.map((c) => el('th', { scope: 'col' }, c)))),
+      el('thead', {}, el('tr', {}, cabecalhos.map((c, i) => el('th', { scope: 'col', class: numericas.has(i) ? 'num' : null }, c)))),
       el('tbody', {}, linhas),
       rodape ? el('tfoot', {}, rodape) : null,
     ),

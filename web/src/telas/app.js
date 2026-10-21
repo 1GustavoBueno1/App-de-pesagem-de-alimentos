@@ -53,8 +53,13 @@ export function telaApp(usuario, repo) {
     el(
       'header',
       { class: 'topo' },
-      el('span', { class: 'marca' }, 'Custos da Cozinha'),
-      el('nav', { 'aria-label': 'Seções' }, botoes),
+      el(
+        'a',
+        { class: 'marca', href: '#pesagem' },
+        el('img', { src: '/logo-dudu-192.png', alt: '', width: 44, height: 44 }),
+        el('span', {}, el('span', { class: 'marca-nome' }, 'Dudu'), el('span', { class: 'marca-sub' }, 'Custos da cozinha')),
+      ),
+      el('nav', { class: 'secoes', 'aria-label': 'Seções' }, botoes),
       el('span', { class: 'usuario' }, usuario.email ?? ''),
       sair,
     ),
