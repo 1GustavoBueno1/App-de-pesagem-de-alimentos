@@ -21,7 +21,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 
-const DONO = 'tPaDPlz9bsX9gZAfx6d0LkrPGSN2';
+const DONO = '4n3QdXnAE2XtFwzxMedf0Jlee552';
 let env;
 
 beforeAll(async () => {

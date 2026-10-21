@@ -16,7 +16,7 @@ Cloud Run nem faturamento.
 
 ## Security Rules (`firestore.rules`)
 
-- Só a conta do dono (UID `tPaDPlz9bsX9gZAfx6d0LkrPGSN2`, fixo na regra) lê e escreve.
+- Só a conta do dono (UID `4n3QdXnAE2XtFwzxMedf0Jlee552`, fixo na regra) lê e escreve.
   Outra conta, mesmo logada, e visitantes sem login **não veem nada**.
 - Coleções fora da lista (recipientes, alimentos, configuracao, saidas, sobras,
   observacoes_dia, gastos) são negadas até para o dono.
