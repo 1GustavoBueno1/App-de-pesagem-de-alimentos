@@ -5,14 +5,11 @@ import { auth } from '../firebase.js';
 import { el, trocar } from '../dom.js';
 import { telaPesagem } from './pesagem.js';
 import { telaCadastros } from './cadastros.js';
+import { telaGastos } from './gastos.js';
 
 const SECOES = [
   { id: 'pesagem', nome: 'Pesagem', tela: (repo, sub) => telaPesagem(repo, sub) },
-  {
-    id: 'gastos',
-    nome: 'Gastos',
-    tela: () => el('div', {}, el('h2', {}, 'Gastos'), el('p', { class: 'aviso' }, 'Esta tela será construída na etapa 8.')),
-  },
+  { id: 'gastos', nome: 'Gastos', tela: (repo) => telaGastos(repo) },
   { id: 'cadastros', nome: 'Cadastros', tela: (repo) => telaCadastros(repo) },
 ];
 

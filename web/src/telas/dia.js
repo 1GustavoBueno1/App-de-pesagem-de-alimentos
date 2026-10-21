@@ -2,7 +2,7 @@
 // editavel = true  -> aba "Hoje" (abre em hoje, mas aceita outra data para corrigir dias anteriores)
 // editavel = false -> aba "Relatórios" (só leitura, com o botão Gerar PDF)
 import { el, trocar } from '../dom.js';
-import { D } from '../calculos.js';
+import { D, totalGastos } from '../calculos.js';
 import { diaSP, formatarData } from '../datas.js';
 import { dinheiro, peso, percentual, taxaPercentual } from '../formato.js';
 import { resumirDia } from '../resumo.js';
@@ -32,13 +32,19 @@ export function telaDia(repo, { editavel }) {
     const dia = data.input.value;
     titulo.textContent = dia === diaSP() ? `Hoje, ${formatarData(dia)}` : formatarData(dia);
     const saidas = await repo.saidasDoDia(dia);
-    const [sobras, obs] = await Promise.all([repo.sobrasDe(saidas.map((s) => s.id)), repo.observacao(dia)]);
+    // Gastos só são lidos em Relatórios (vão no PDF); a aba Hoje não gasta essa leitura.
+    const [sobras, obs, gastos] = await Promise.all([
+      repo.sobrasDe(saidas.map((s) => s.id)),
+      repo.observacao(dia),
+      editavel ? [] : repo.gastosDoDia(dia),
+    ]);
     const { linhas, totais } = resumirDia(saidas, sobras);
-    carregado = { dia, saidas, sobras, observacao: obs, gastos: [] };
+    carregado = { dia, saidas, sobras, observacao: obs, gastos };
     trocar(
       area,
       linhas.length ? tabelaDoDia(linhas, totais, sobras) : el('p', { class: 'aviso' }, 'Nenhuma saída nesta data.'),
       editavel ? cartaoObservacao(dia, obs) : obs ? el('section', { class: 'cartao' }, el('h3', {}, 'Observação do dia'), el('p', { class: 'texto-livre' }, obs)) : null,
+      gastos.length ? secaoGastos(gastos) : null,
     );
   }
 
@@ -73,6 +79,19 @@ export function telaDia(repo, { editavel }) {
       editavel ? el('td', {}) : null,
     );
     return tabela(cab, corpo, rodape);
+  }
+
+  function secaoGastos(gastos) {
+    const linhas = gastos.map((g) =>
+      el('tr', {}, el('td', {}, g.descricao), el('td', {}, g.forma_pagamento), el('td', { class: 'num' }, dinheiro(g.valor))),
+    );
+    const rodape = el(
+      'tr',
+      {},
+      el('th', { scope: 'row', colspan: 2 }, 'Total'),
+      el('td', { class: 'num' }, dinheiro(totalGastos(gastos.map((g) => g.valor)))),
+    );
+    return el('section', {}, el('h3', {}, 'Gastos do dia'), tabela(['Descrição', 'Forma', 'Valor'], linhas, rodape));
   }
 
   function acoesDaLinha(saida, sobra) {

@@ -23,6 +23,16 @@ export function campoData(rotulo, valor) {
 
 export function campoSelecao(rotulo) {
   const input = el('select', { id: novoId('sel') });
+  // No navegador, Enter numa lista não envia o formulário. Aqui ele avança para o
+  // próximo campo e, se a lista for o último campo, envia.
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !input.form) return;
+    e.preventDefault();
+    const campos = [...input.form.elements].filter((c) => !c.disabled && !c.hidden && c.type !== 'hidden');
+    const proximo = campos[campos.indexOf(input) + 1];
+    if (!proximo || proximo.type === 'submit') input.form.requestSubmit();
+    else proximo.focus();
+  });
   return { input, bloco: el('div', { class: 'campo' }, el('label', { for: input.id }, rotulo), input) };
 }
 

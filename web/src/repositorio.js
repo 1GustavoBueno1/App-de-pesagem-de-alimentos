@@ -8,6 +8,7 @@ import {
   getDocs,
   query,
   where,
+  orderBy,
   limit,
   documentId,
   addDoc,
@@ -21,12 +22,16 @@ import {
   D,
   lerPeso,
   lerNaoNegativo,
+  lerValor,
   pesoLiquido,
   custoProducao,
   percentualSobra,
 } from './calculos.js';
 import { dataValida } from './datas.js';
 import { paraFirestore, peso } from './formato.js';
+
+/** Precisam ser iguais às da regra de gastos em firestore.rules (um teste confere). */
+export const FORMAS_PAGAMENTO = ['Dinheiro', 'Pix', 'Cartão de débito', 'Cartão de crédito', 'Boleto', 'Transferência'];
 
 /** Nome comparável: sem espaços nas pontas, minúsculo. */
 export const normalizar = (nome) => String(nome ?? '').trim().toLocaleLowerCase('pt-BR');
@@ -268,6 +273,44 @@ export function criarRepositorio(db) {
     await setDoc(doc(db, 'observacoes_dia', data), { texto });
   }
 
+  // ---- Gastos ---------------------------------------------------------------
+  async function salvarGasto({ id, descricao, dataPagamento, valor, forma }) {
+    const texto = String(descricao ?? '').trim();
+    if (texto === '') throw new Error('Descrição: informe a descrição.');
+    if (texto.length > 100) throw new Error('Descrição: use no máximo 100 caracteres.');
+    if (!dataValida(dataPagamento)) throw new Error('Data de pagamento: informe uma data válida.');
+    const dinheiro = lerValor(valor, 'Valor').toFixed(2);
+    if (!FORMAS_PAGAMENTO.includes(forma)) throw new Error('Forma de pagamento: escolha uma forma da lista.');
+    const dados = { descricao: texto, data_pagamento: dataPagamento, valor: dinheiro, forma_pagamento: forma };
+    if (id) {
+      await updateDoc(doc(db, 'gastos', id), dados); // criado_em não muda
+    } else {
+      id = (await addDoc(collection(db, 'gastos'), { ...dados, criado_em: serverTimestamp() })).id;
+    }
+    return { id, ...dados };
+  }
+
+  /** Gastos com data de pagamento entre inicio e fim (inclusive), por data. */
+  async function gastosDoPeriodo(inicio, fim) {
+    if (!dataValida(inicio) || !dataValida(fim)) throw new Error('Período: informe datas válidas.');
+    if (inicio > fim) throw new Error('Período: a data inicial não pode ser depois da final.');
+    const snap = await getDocs(
+      query(
+        collection(db, 'gastos'),
+        where('data_pagamento', '>=', inicio),
+        where('data_pagamento', '<=', fim),
+        orderBy('data_pagamento'),
+      ),
+    );
+    const ms = (g) => g.criado_em?.toMillis?.() ?? 0;
+    return snap.docs
+      .map(comId)
+      .sort((a, b) => a.data_pagamento.localeCompare(b.data_pagamento) || ms(a) - ms(b));
+  }
+
+  const gastosDoDia = (dia) => gastosDoPeriodo(dia, dia);
+  const apagarGasto = (id) => deleteDoc(doc(db, 'gastos', id));
+
   return {
     recipientes,
     salvarRecipiente,
@@ -286,5 +329,9 @@ export function criarRepositorio(db) {
     apagarSobra,
     observacao,
     salvarObservacao,
+    salvarGasto,
+    gastosDoPeriodo,
+    gastosDoDia,
+    apagarGasto,
   };
 }
