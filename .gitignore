@@ -104,3 +104,6 @@ Thumbs.db
 # Logs
 *.log
 logs/   
+# Web app (Node/Vite/Firebase)
+node_modules/
+.firebase/
