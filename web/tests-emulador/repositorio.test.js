@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { criarRepositorio } from '../src/repositorio.js';
 import { semear, RECIPIENTES_INICIAIS } from '../src/seed.js';
 
-const DONO = 'tPaDPlz9bsX9gZAfx6d0LkrPGSN2';
+const DONO = '4n3QdXnAE2XtFwzxMedf0Jlee552';
 let env;
 let db;
 let repo;

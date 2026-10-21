@@ -10,7 +10,7 @@ service cloud.firestore {
 
     // ---- Quem pode ----------------------------------------------------------
     function dono() {
-      return request.auth != null && request.auth.uid == 'tPaDPlz9bsX9gZAfx6d0LkrPGSN2';
+      return request.auth != null && request.auth.uid == '4n3QdXnAE2XtFwzxMedf0Jlee552';
     }
 
     // ---- Validações reutilizadas -------------------------------------------
