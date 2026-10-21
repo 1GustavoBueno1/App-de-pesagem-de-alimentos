@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Etapa 2: tudo bloqueado. As regras de verdade (só o dono lê e escreve)
+// entram na etapa 4. Nunca publique regras abertas ("allow read, write: if true").
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}
