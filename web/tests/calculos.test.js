@@ -11,6 +11,7 @@ import {
   lerValor,
   totalGastos,
   lerNaoNegativo,
+  lerDinheiroBR,
 } from '../src/calculos.js';
 
 // Igualdade numérica de Decimal (como == no Python).
@@ -140,5 +141,37 @@ describe('lerNaoNegativo (novo: tara, taxa e peso bruto da sobra)', () => {
   it('rejeita vazio e texto', () => {
     expect(() => lerNaoNegativo('', 'Tara')).toThrow('Tara: informe um valor.');
     expect(() => lerNaoNegativo('x', 'Tara')).toThrow(Error);
+  });
+});
+
+describe('lerDinheiroBR (valores em reais como se escreve no Brasil)', () => {
+  it.each([
+    ['3.500,00', '3500'],
+    ['R$ 3.500,00', '3500'],
+    ['R$3.500,00', '3500'],
+    ['3500', '3500'],
+    ['3500,5', '3500.5'],
+    ['3500.50', '3500.5'],
+    ['1.234.567,89', '1234567.89'],
+    ['0,50', '0.5'],
+    ['  250  ', '250'],
+    ['3.500', '3500'], // ponto com 3 dígitos depois é separador de milhar
+    ['3.5', '3.5'], // ponto com 1 ou 2 dígitos é decimal
+  ])('aceita %s', (texto, esperado) => igual(lerDinheiroBR(texto, 'Valor'), esperado));
+
+  it.each(['', '   ', 'R$', 'abc', '-5', '3,505', '3.5000', '1.23.4', '1,2,3', '1.234,5,6', '12 34', 'NaN', 'Infinity', '1e3', '0x10'])(
+    'recusa %j',
+    (texto) => expect(() => lerDinheiroBR(texto, 'Valor')).toThrow(Error),
+  );
+  it('zero só é aceito quando permitido', () => {
+    expect(() => lerDinheiroBR('0', 'Salário')).toThrow('Salário: deve ser maior que zero.');
+    expect(() => lerDinheiroBR('0,00', 'Salário')).toThrow('Salário: deve ser maior que zero.');
+    igual(lerDinheiroBR('0', 'Prêmio', { permitirZero: true }), '0');
+  });
+  it('mensagem diz o campo e a regra', () => {
+    expect(() => lerDinheiroBR('', 'Salário')).toThrow('Salário: informe um valor.');
+    expect(() => lerDinheiroBR('abc', 'Salário')).toThrow('Salário: "abc" não é um valor em reais válido.');
+    expect(() => lerDinheiroBR('3,505', 'Salário')).toThrow('Salário: use no máximo 2 casas decimais (centavos).');
+    expect(() => lerDinheiroBR('-5', 'Prêmio', { permitirZero: true })).toThrow('Prêmio: não pode ser negativo.');
   });
 });

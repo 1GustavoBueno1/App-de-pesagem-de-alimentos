@@ -23,6 +23,7 @@ import {
   lerPeso,
   lerNaoNegativo,
   lerValor,
+  lerDinheiroBR,
   pesoLiquido,
   custoProducao,
   percentualSobra,
@@ -311,6 +312,57 @@ export function criarRepositorio(db) {
   const gastosDoDia = (dia) => gastosDoPeriodo(dia, dia);
   const apagarGasto = (id) => deleteDoc(doc(db, 'gastos', id));
 
+  // ---- Folha de pagamento ---------------------------------------------------------
+  // Poucos documentos (a folha toda), por isso a tela lê a coleção inteira ao abrir.
+  async function folha() {
+    const snap = await getDocs(collection(db, 'folha'));
+    return snap.docs.map(comId).sort(porNome);
+  }
+
+  function lerLote(lote) {
+    const n = Number(lote);
+    if (String(lote ?? '').trim() === '' || !Number.isInteger(n) || n < 1 || n > 4) {
+      throw new Error('Lote: escolha de 1 a 4.');
+    }
+    return n;
+  }
+
+  async function salvarFolha({ id, nome, salario, premio, lote }) {
+    const lista = await folha();
+    const dados = {
+      nome: lerNome(String(nome ?? '').replace(/\s+/g, ' '), lista, id, 'um funcionário'),
+      salario: lerDinheiroBR(salario, 'Salário').toFixed(2),
+      premio: String(premio ?? '').trim() === '' ? '0.00' : lerDinheiroBR(premio, 'Prêmio', { permitirZero: true }).toFixed(2),
+      lote: lerLote(lote),
+    };
+    if (id) await updateDoc(doc(db, 'folha', id), dados); // criado_em não muda
+    else id = (await addDoc(collection(db, 'folha'), { ...dados, criado_em: serverTimestamp() })).id;
+    return { id, ...dados };
+  }
+
+  const apagarFolha = (id) => deleteDoc(doc(db, 'folha', id));
+
+  /** Importa linhas já validadas (lerLinhasFolha). Quem já existe é ignorado, nunca sobrescrito. */
+  async function importarFolha(linhas) {
+    const existentes = new Set((await folha()).map((f) => normalizar(f.nome)));
+    const novas = linhas.filter((l) => !existentes.has(normalizar(l.nome)));
+    const ignorados = linhas.filter((l) => existentes.has(normalizar(l.nome))).map((l) => l.nome);
+    for (let i = 0; i < novas.length; i += 400) {
+      const lote = writeBatch(db);
+      for (const l of novas.slice(i, i + 400)) {
+        lote.set(doc(collection(db, 'folha')), {
+          nome: lerNome(l.nome, [], null, 'um funcionário'),
+          salario: l.salario.toFixed(2),
+          premio: l.premio.toFixed(2),
+          lote: lerLote(l.lote),
+          criado_em: serverTimestamp(),
+        });
+      }
+      await lote.commit();
+    }
+    return { criados: novas.length, ignorados };
+  }
+
   return {
     recipientes,
     salvarRecipiente,
@@ -333,5 +385,9 @@ export function criarRepositorio(db) {
     gastosDoPeriodo,
     gastosDoDia,
     apagarGasto,
+    folha,
+    salvarFolha,
+    apagarFolha,
+    importarFolha,
   };
 }

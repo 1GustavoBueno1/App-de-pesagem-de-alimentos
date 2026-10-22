@@ -770,3 +770,59 @@ td.acoes button {
 .linha-form + .visor {
   margin-top: 0;
 }
+
+/* ---- Salários -------------------------------------------------------------------- */
+.nota-folha {
+  margin: 0.9rem 0 1.5rem;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid var(--ouro);
+  border-radius: var(--raio-pequeno);
+  background: var(--cartao);
+  color: var(--suave);
+  font-size: 0.9rem;
+}
+.nota-folha strong {
+  color: var(--tinta);
+}
+.bloco-folha {
+  margin-top: 1.5rem;
+}
+.bloco-folha .linha-form {
+  margin-bottom: 1rem;
+}
+.linha-total td {
+  border-top: 2px solid var(--marinho);
+  font-weight: 800;
+}
+.previa-importacao {
+  min-height: 3rem;
+  margin: 0.6rem 0;
+}
+.erros-importacao {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.8rem 0.6rem 1.6rem;
+  border-left: 4px solid var(--erro);
+  border-radius: var(--raio-pequeno);
+  background: rgb(179 38 30 / 0.06);
+  color: var(--erro);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.janela textarea {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  min-height: 160px;
+}
+
+/* Visor com valores em reais grandes (ex.: R$ 62.911,99): cada célula é larga o bastante e a
+   fonte acompanha a largura da célula, então o valor nunca invade a vizinha nem é cortado. */
+.visor-largo .visor-celulas {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.visor-largo .visor-celula {
+  container-type: inline-size;
+}
+.visor-largo .visor-valor {
+  font-size: 1.35rem;
+  font-size: clamp(1rem, calc(100cqw / 9.5), 1.7rem);
+}

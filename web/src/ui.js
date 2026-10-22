@@ -120,7 +120,7 @@ export function janelaFormulario(titulo, montar) {
  * Visor no estilo de balança: painel com rótulos e valores grandes.
  * campos: [{ chave, rotulo }]. definir({ chave: 'texto' } | null, nota?) troca os valores.
  */
-export function criarVisor(campos, { destaque = false } = {}) {
+export function criarVisor(campos, { destaque = false, largo = false } = {}) {
   const valores = new Map();
   const celulas = campos.map(({ chave, rotulo }) => {
     const valor = el('span', { class: 'visor-valor vazio' }, '—');
@@ -130,7 +130,7 @@ export function criarVisor(campos, { destaque = false } = {}) {
   const nota = el('p', { class: 'visor-nota' });
   const elemento = el(
     'div',
-    { class: destaque ? 'visor visor-destaque' : 'visor', role: 'status', 'aria-live': 'polite' },
+    { class: ['visor', destaque && 'visor-destaque', largo && 'visor-largo'].filter(Boolean).join(' '), role: 'status', 'aria-live': 'polite' },
     el('div', { class: 'visor-celulas' }, celulas),
     nota,
   );

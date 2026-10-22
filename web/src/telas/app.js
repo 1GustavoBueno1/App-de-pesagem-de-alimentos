@@ -1,15 +1,15 @@
 // Estrutura do app depois do login: barra do topo, navegação e botão Sair.
-// Rotas pelo hash: #pesagem/saida, #pesagem/hoje, #cadastros, #gastos...
+// Rotas pelo hash: #pesagem/saida, #pesagem/hoje, #cadastros, #gastos, #gastos/salarios...
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase.js';
 import { el, trocar } from '../dom.js';
 import { telaPesagem } from './pesagem.js';
 import { telaCadastros } from './cadastros.js';
-import { telaGastos } from './gastos.js';
+import { telaFinanceiro } from './financeiro.js';
 
 const SECOES = [
   { id: 'pesagem', nome: 'Pesagem', tela: (repo, sub) => telaPesagem(repo, sub) },
-  { id: 'gastos', nome: 'Gastos', tela: (repo) => telaGastos(repo) },
+  { id: 'gastos', nome: 'Gastos', tela: (repo, sub) => telaFinanceiro(repo, sub) },
   { id: 'cadastros', nome: 'Cadastros', tela: (repo) => telaCadastros(repo) },
 ];
 

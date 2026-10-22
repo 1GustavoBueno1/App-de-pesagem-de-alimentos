@@ -38,6 +38,11 @@ service cloud.firestore {
       return decimalPositivo(v) && v.matches('^[0-9]{1,9}([.][0-9]{1,2})?$');
     }
 
+    // Dinheiro que pode ser zero (prêmio): até 2 casas, sem sinal.
+    function dinheiroOuZero(v) {
+      return v is string && v.matches('^[0-9]{1,9}([.][0-9]{1,2})?$');
+    }
+
     // AAAA-MM-DD com mês 01-12 e dia 01-31 (não confere 30/02).
     function data(v) {
       return v is string && v.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
@@ -118,6 +123,20 @@ service cloud.firestore {
         && data(dia)
         && camposExatos(['texto'])
         && texto(dados().texto, 0, 2000);
+    }
+
+    // Folha de pagamento: salário, prêmio (abatido do consumo do funcionário) e lote 1 a 4.
+    // Dados sensíveis: só o dono lê. Valores como string, nunca number.
+    match /folha/{id} {
+      allow read, delete: if dono();
+      allow create, update: if dono()
+        && camposExatos(['nome', 'salario', 'premio', 'lote', 'criado_em'])
+        && texto(dados().nome, 1, 60)
+        && dinheiro(dados().salario)
+        && dinheiroOuZero(dados().premio)
+        && dados().lote is int
+        && dados().lote >= 1 && dados().lote <= 4
+        && criadoEmValido();
     }
 
     match /gastos/{id} {
