@@ -131,3 +131,105 @@ describe('cadastro da folha (repositório)', () => {
     await expect(intruso.folha()).rejects.toMatchObject({ code: 'permission-denied' });
   });
 });
+
+const pagamento = (extra = {}) => ({
+  mes: '2026-10',
+  funcionario_id: 'a',
+  nome: 'Fulano',
+  salario: '3000.00',
+  premio: '500.00',
+  lote: 2,
+  pago_em: serverTimestamp(),
+  ...extra,
+});
+
+describe('regras dos pagamentos da folha', () => {
+  beforeEach(() => env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), 'folha/a'), registro({ criado_em: new Date() }))));
+
+  it('dono marca pago, lê e desmarca; outra conta e visitante não', async () => {
+    await assertSucceeds(setDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), pagamento()));
+    await assertSucceeds(getDoc(doc(dono(), 'pagamentos_folha/2026-10_a')));
+    await assertFails(getDoc(doc(outro(), 'pagamentos_folha/2026-10_a')));
+    await assertFails(getDoc(doc(anonimo(), 'pagamentos_folha/2026-10_a')));
+    await assertFails(deleteDoc(doc(outro(), 'pagamentos_folha/2026-10_a')));
+    await assertFails(setDoc(doc(outro(), 'pagamentos_folha/2026-11_a'), pagamento({ mes: '2026-11' })));
+    await assertSucceeds(deleteDoc(doc(dono(), 'pagamentos_folha/2026-10_a')));
+  });
+  it('não edita um pagamento já gravado', async () => {
+    await assertSucceeds(setDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), pagamento()));
+    await assertFails(updateDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), { salario: '1.00' }));
+    await assertFails(setDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), pagamento({ salario: '1.00' })));
+    await assertFails(updateDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), { pago_em: serverTimestamp() }));
+  });
+  it.each([
+    ['valor diferente do da folha', { salario: '1.00' }],
+    ['prêmio diferente do da folha', { premio: '1.00' }],
+    ['lote diferente do da folha', { lote: 3 }],
+    ['nome diferente do da folha', { nome: 'Outro' }],
+    ['pessoa que não existe na folha', { funcionario_id: 'nao-existe' }],
+    ['mês inválido', { mes: '2026-13' }],
+    ['mês com dia', { mes: '2026-10-01' }],
+    ['campo extra', { cpf: '000' }],
+    ['pago_em do celular', { pago_em: new Date('2020-01-01') }],
+    ['salário como number', { salario: 3000 }],
+  ])('recusa: %s', (_, mudanca) => assertFails(setDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), pagamento(mudanca))));
+  it('ID precisa ser mês_pessoa', async () => {
+    await assertFails(setDoc(doc(dono(), 'pagamentos_folha/qualquer'), pagamento()));
+    await assertFails(setDoc(doc(dono(), 'pagamentos_folha/2026-11_a'), pagamento()));
+  });
+  it('campo faltando é recusado', () => {
+    const { nome, ...sem } = pagamento();
+    return assertFails(setDoc(doc(dono(), 'pagamentos_folha/2026-10_a'), sem));
+  });
+});
+
+describe('pagamentos da folha (repositório)', () => {
+  const nova = (nome, lote = 1) => repo().salvarFolha({ nome, salario: '2000', premio: '100', lote });
+
+  it('marca pago só no mês escolhido; outro mês continua em aberto', async () => {
+    const a = await nova('Ana');
+    const b = await nova('Beto');
+    await repo().marcarPago('2026-10', a);
+    expect([...(await repo().pagamentosDoMes('2026-10')).keys()]).toEqual([a.id]);
+    expect((await repo().pagamentosDoMes('2026-11')).size).toBe(0);
+    const p = (await repo().pagamentosDoMes('2026-10')).get(a.id);
+    expect(p).toMatchObject({ nome: 'Ana', salario: '2000.00', premio: '100.00', lote: 1, mes: '2026-10' });
+    expect(p.pago_em).toBeTruthy();
+    expect((await repo().pagamentosDoMes('2026-10')).has(b.id)).toBe(false);
+  });
+  it('marcar duas vezes não dá erro nem duplica', async () => {
+    const a = await nova('Ana');
+    await repo().marcarPago('2026-10', a);
+    await expect(repo().marcarPago('2026-10', a)).resolves.toBeUndefined();
+    expect((await repo().pagamentosDoMes('2026-10')).size).toBe(1);
+  });
+  it('desmarca', async () => {
+    const a = await nova('Ana');
+    await repo().marcarPago('2026-10', a);
+    await repo().desmarcarPago('2026-10', a.id);
+    expect((await repo().pagamentosDoMes('2026-10')).size).toBe(0);
+  });
+  it('o valor pago fica gravado mesmo se a folha mudar depois', async () => {
+    const a = await nova('Ana');
+    await repo().marcarPago('2026-10', a);
+    await repo().salvarFolha({ id: a.id, nome: 'Ana', salario: '2500', premio: '100', lote: 1 });
+    expect((await repo().pagamentosDoMes('2026-10')).get(a.id).salario).toBe('2000.00');
+  });
+  it('lista de pessoa desatualizada (valor mudou) é recusada pelas regras', async () => {
+    const a = await nova('Ana');
+    await repo().salvarFolha({ id: a.id, nome: 'Ana', salario: '2500', premio: '100', lote: 1 });
+    await expect(repo().marcarPago('2026-10', a)).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('mês inválido é recusado antes de ir ao banco', async () => {
+    const a = await nova('Ana');
+    await expect(repo().marcarPago('2026-13', a)).rejects.toThrow('Mês inválido.');
+    await expect(repo().pagamentosDoMes('x')).rejects.toThrow('Mês inválido.');
+    await expect(repo().desmarcarPago('', a.id)).rejects.toThrow('Mês inválido.');
+  });
+  it('outra conta não lê nem marca', async () => {
+    const a = await nova('Ana');
+    const intruso = criarRepositorio(outro());
+    await expect(intruso.pagamentosDoMes('2026-10')).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(intruso.marcarPago('2026-10', a)).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+});

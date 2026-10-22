@@ -52,3 +52,21 @@ export function dataHoraSP(instante = new Date()) {
   const p = Object.fromEntries(FORMATO_DATA_HORA_SP.formatToParts(instante).map((x) => [x.type, x.value]));
   return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
 }
+
+const NOMES_MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+/** Confere AAAA-MM (mês 01 a 12). */
+export const mesValido = (mes) => typeof mes === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(mes);
+
+/** "2026-10" -> "outubro de 2026". */
+export function rotuloMes(mes) {
+  const [a, m] = mes.split('-');
+  return `${NOMES_MES[Number(m) - 1]} de ${a}`;
+}
+
+/** Soma (ou subtrai) meses de um AAAA-MM: somarMes('2026-12', 1) -> '2027-01'. */
+export function somarMes(mes, n) {
+  const [a, m] = mes.split('-').map(Number);
+  const indice = a * 12 + (m - 1) + n;
+  return `${Math.floor(indice / 12)}-${String((indice % 12) + 1).padStart(2, '0')}`;
+}

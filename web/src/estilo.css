@@ -866,3 +866,59 @@ td.acoes button {
   font-weight: 600;
   font-size: 0.92rem;
 }
+
+/* Pagamento mês a mês: seletor de mês, situação de cada pessoa e resumo do que falta. */
+.seletor-mes {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-bottom: 0.2rem;
+}
+.seletor-mes button {
+  min-width: 2.6rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: var(--cartao);
+  color: var(--tinta);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.situacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.situacao small {
+  flex-basis: 100%;
+}
+.selo {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.selo-falta {
+  background: rgb(179 38 30 / 0.1);
+  color: var(--erro);
+}
+.selo-pago {
+  background: rgb(31 122 77 / 0.14);
+  color: #1f7a4d;
+}
+@media (prefers-color-scheme: dark) {
+  .selo-pago {
+    color: #6fd3a0;
+  }
+}
+
+.barra-filtro {
+  margin: 1rem 0 0.4rem;
+}
+.barra-filtro .filtro-lote {
+  margin: 0.5rem 0;
+}

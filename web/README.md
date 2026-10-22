@@ -19,7 +19,7 @@ Cloud Run nem faturamento.
 - Só a conta do dono (UID `4n3QdXnAE2XtFwzxMedf0Jlee552`, fixo na regra) lê e escreve.
   Outra conta, mesmo logada, e visitantes sem login **não veem nada**.
 - Coleções fora da lista (recipientes, alimentos, configuracao, saidas, sobras,
-  observacoes_dia, gastos, folha) são negadas até para o dono.
+  observacoes_dia, gastos, folha, pagamentos_folha) são negadas até para o dono.
 - Cada gravação confere os campos exatos, os tipos (valores como **string** decimal com
   ponto, nunca number), os limites (preço > 0, tara e taxa ≥ 0, valor com até 2 casas),
   o formato das datas `AAAA-MM-DD` e as formas de pagamento permitidas.
@@ -69,6 +69,13 @@ trabalhista do prêmio deve ser confirmado com o contador (o aviso também apare
   `R$ 3.500,00`, `3500` ou `3500,5`. Editar e apagar (com confirmação) estão na lista.
 - **Filtro por lote**: botões Todos, Lote 1 a 4 acima da lista mostram só quem recebe naquele
   prazo, com o total a pagar em salários, os prêmios a abater e o total do lote.
+- **Pagamento mês a mês**: o seletor de mês (‹ ›) começa no mês atual. Cada pessoa aparece como
+  **Falta pagar** ou **Pago em dd/mm**; "Marcar pago" registra e "Desfazer" (com confirmação)
+  desfaz. O filtro "Falta pagar / Já pagos" combina com o filtro de lote, e o resumo mostra
+  quanto falta pagar em salários, os prêmios a abater e quanto já foi pago. Mês novo começa
+  tudo em aberto. O pagamento grava os valores da hora (coleção `pagamentos_folha`), então
+  editar a folha depois não muda o que foi pago; a tela avisa quando os valores diferem.
+  O pagamento de quem for apagado da folha deixa de aparecer na tela.
 - **Importar tabela**: cola a tabela inteira (Funcionário, Salário, Prêmio, Lote, uma pessoa por
   linha; pode copiar de uma planilha). Cabeçalho e linha TOTAL são ignorados, a tela mostra
   uma prévia com os totais e **só libera o botão se todas as linhas estiverem certas**. Quem

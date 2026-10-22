@@ -3,7 +3,8 @@
 // (não sai como pagamento em dinheiro), então o caixa vê os dois valores sem misturar.
 import { el, trocar } from '../dom.js';
 import { dinheiro } from '../formato.js';
-import { LOTES, PRAZOS_LOTE, resumirFolha, lerLinhasFolha } from '../folha.js';
+import { LOTES, PRAZOS_LOTE, resumirFolha, resumirPagamentos, lerLinhasFolha } from '../folha.js';
+import { diaSP, formatarData, rotuloMes, somarMes } from '../datas.js';
 import {
   campoTexto,
   campoSelecao,
@@ -25,6 +26,9 @@ export function telaSalarios(repo) {
   let lista = [];
   let editando = null;
   let filtro = 0; // 0 = todos os lotes
+  let situacao = 'todos'; // todos | faltam | pagos
+  let mes = diaSP().slice(0, 7);
+  let pagos = new Map();
 
   // ---- Totais (os 3 números do caixa)
   const visor = criarVisor(
@@ -94,45 +98,118 @@ export function telaSalarios(repo) {
 
   // ---- Lista e resumo
   const area = el('div', {});
-  const barraFiltro = el('div', { class: 'filtro-lote', role: 'group', 'aria-label': 'Mostrar por lote' });
+  const barraFiltro = el('div', { class: 'barra-filtro' });
   const resumoFiltro = el('p', { class: 'resumo-filtro', 'aria-live': 'polite' });
 
-  function desenharFiltro() {
-    trocar(
-      barraFiltro,
-      [0, ...LOTES].map((l) =>
-        el(
-          'button',
-          {
-            type: 'button',
-            'aria-pressed': String(filtro === l),
-            onclick: () => {
-              filtro = l;
-              desenharLista();
-            },
-          },
-          l === 0 ? 'Todos' : `Lote ${l}`,
-        ),
+  function chips(rotulo, opcoes, atual, aoEscolher) {
+    return el(
+      'div',
+      { class: 'filtro-lote', role: 'group', 'aria-label': rotulo },
+      opcoes.map(([valor, texto]) =>
+        el('button', { type: 'button', 'aria-pressed': String(atual === valor), onclick: () => aoEscolher(valor) }, texto),
       ),
     );
   }
 
+  function desenharFiltro() {
+    trocar(
+      barraFiltro,
+      el(
+        'div',
+        { class: 'seletor-mes' },
+        el('button', { type: 'button', 'aria-label': 'Mês anterior', onclick: () => trocarMes(-1) }, '‹'),
+        el('strong', { 'aria-live': 'polite' }, rotuloMes(mes).replace(/^./, (c) => c.toUpperCase())),
+        el('button', { type: 'button', 'aria-label': 'Próximo mês', onclick: () => trocarMes(1) }, '›'),
+      ),
+      chips('Mostrar por lote', [[0, 'Todos'], ...LOTES.map((l) => [l, `Lote ${l}`])], filtro, (l) => {
+        filtro = l;
+        desenharLista();
+      }),
+      chips(
+        'Mostrar por situação',
+        [['todos', 'Tudo'], ['faltam', 'Falta pagar'], ['pagos', 'Já pagos']],
+        situacao,
+        (v) => {
+          situacao = v;
+          desenharLista();
+        },
+      ),
+    );
+  }
+
+  async function trocarMes(n) {
+    mes = somarMes(mes, n);
+    await executar(aviso, null, desenhar);
+  }
+
+  const dataDoPagamento = (p) => {
+    try {
+      return formatarData(diaSP(p.pago_em.toDate())).slice(0, 5);
+    } catch {
+      return '';
+    }
+  };
+
+  function celulaSituacao(f) {
+    const p = pagos.get(f.id);
+    if (!p) {
+      const b = el('button', { type: 'button', class: 'primario' }, 'Marcar pago');
+      b.addEventListener('click', () =>
+        executar(aviso, b, async () => {
+          await repo.marcarPago(mes, f);
+          await desenhar();
+          aviso.ok(`${f.nome}: pago em ${rotuloMes(mes)}.`);
+        }),
+      );
+      return el('td', { class: 'situacao' }, el('span', { class: 'selo selo-falta' }, 'Falta pagar'), b);
+    }
+    const mudou = p.salario !== f.salario || p.premio !== f.premio;
+    const desfazer = el('button', { type: 'button', class: 'perigo-leve' }, 'Desfazer');
+    desfazer.addEventListener('click', async () => {
+      if (!(await confirmar(`Desfazer o pagamento de "${f.nome}" em ${rotuloMes(mes)}?`, 'Desfazer'))) return;
+      await executar(aviso, desfazer, async () => {
+        await repo.desmarcarPago(mes, f.id);
+        await desenhar();
+        aviso.ok(`Pagamento de "${f.nome}" desfeito.`);
+      });
+    });
+    const dia = dataDoPagamento(p);
+    return el(
+      'td',
+      { class: 'situacao' },
+      el('span', { class: 'selo selo-pago' }, dia ? `Pago em ${dia}` : 'Pago'),
+      mudou ? el('small', { class: 'aviso' }, `Foi pago ${dinheiro(p.salario)}; a folha agora tem ${dinheiro(f.salario)}.`) : null,
+      desfazer,
+    );
+  }
+
+  const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+
   function desenharLista() {
     desenharFiltro();
-    const visiveis = filtro ? lista.filter((f) => f.lote === filtro) : lista;
-    const r = resumirFolha(visiveis);
+    const doLote = filtro ? lista.filter((f) => f.lote === filtro) : lista;
+    const visiveis = doLote.filter((f) => situacao === 'todos' || (situacao === 'pagos') === pagos.has(f.id));
+    const r = resumirPagamentos(doLote, pagos);
+    const onde = filtro ? `Lote ${filtro} (${PRAZOS_LOTE[filtro].toLowerCase()})` : 'Todos os lotes';
     trocar(
       resumoFiltro,
-      filtro
-        ? `Lote ${filtro} (${PRAZOS_LOTE[filtro].toLowerCase()}): ${r.totais.pessoas} ${r.totais.pessoas === 1 ? 'pessoa' : 'pessoas'} · salários a pagar ${dinheiro(r.totais.salarios)} · prêmios a abater ${dinheiro(r.totais.premios)} · total ${dinheiro(r.totais.total)}`
-        : '',
+      el('strong', {}, `${onde} · ${rotuloMes(mes)}`),
+      el(
+        'span',
+        {},
+        ` · ${plural(r.pagos.pessoas, 'pessoa paga', 'pessoas pagas')} de ${doLote.length}`,
+      ),
+      el('br'),
+      el('span', {}, `Falta pagar: ${dinheiro(r.faltam.salarios)} em salários (${plural(r.faltam.pessoas, 'pessoa', 'pessoas')}) + ${dinheiro(r.faltam.premios)} de prêmios a abater`),
+      el('br'),
+      el('span', {}, `Já pago: ${dinheiro(r.pagos.salarios)} em salários + ${dinheiro(r.pagos.premios)} de prêmios`),
     );
-    resumoFiltro.hidden = !filtro;
+    resumoFiltro.hidden = doLote.length === 0;
     trocar(
       area,
       visiveis.length
         ? tabela(
-            ['Funcionário', 'Salário', 'Prêmio', 'Lote', 'Ações'],
+            ['Funcionário', 'Salário', 'Prêmio', 'Lote', 'Situação', 'Ações'],
             visiveis.map((f) =>
               el(
                 'tr',
@@ -141,6 +218,7 @@ export function telaSalarios(repo) {
                 el('td', { class: 'num' }, dinheiro(f.salario)),
                 el('td', { class: 'num' }, dinheiro(f.premio)),
                 el('td', {}, textoLote(f.lote)),
+                celulaSituacao(f),
                 el('td', { class: 'acoes' }, botaoEditar(f), botaoApagar(f)),
               ),
             ),
@@ -148,15 +226,19 @@ export function telaSalarios(repo) {
         : el(
             'p',
             { class: 'aviso' },
-            lista.length
-              ? `Ninguém no lote ${filtro}.`
-              : 'Nenhum funcionário cadastrado. Adicione acima ou use "Importar tabela" para colar a folha de uma vez.',
+            !lista.length
+              ? 'Nenhum funcionário cadastrado. Adicione acima ou use "Importar tabela" para colar a folha de uma vez.'
+              : situacao === 'faltam'
+                ? 'Ninguém com pagamento em aberto aqui. Tudo pago!'
+                : situacao === 'pagos'
+                  ? 'Ninguém foi marcado como pago aqui ainda.'
+                  : `Ninguém no lote ${filtro}.`,
           ),
     );
   }
 
   async function desenhar() {
-    lista = await repo.folha();
+    [lista, pagos] = await Promise.all([repo.folha(), repo.pagamentosDoMes(mes)]);
     const r = resumirFolha(lista);
     visor.definir(
       { salarios: dinheiro(r.totais.salarios), premios: dinheiro(r.totais.premios), total: dinheiro(r.totais.total) },
