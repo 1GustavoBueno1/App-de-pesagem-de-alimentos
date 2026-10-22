@@ -89,6 +89,16 @@ Prévia: sobra em kg e % de sobra. **Enter** registra.
   em destaque e a lista com editar e apagar (com confirmação). O total é a soma
   exatamente das linhas exibidas.
 
+### 5.1 Salários
+
+Aba **Salários** dentro de Gastos (`#gastos/salarios`): folha de pagamento com **salário,
+prêmio e lote** por funcionário. O prêmio é abatido do consumo do funcionário na empresa, por
+isso é mostrado **separado** do salário: **Salários a pagar**, **Prêmios para abater do
+consumo** e **Total da folha com prêmios**, mais o **resumo por lote** (lote 1 até dia 05,
+2 até dia 10, 3 até dia 15 e 4 até dia 20). Cadastro, edição, exclusão com confirmação e
+importação por colar tabela. Dados só no Firestore (coleção `folha`), visíveis só ao dono.
+Não entra no PDF do dia.
+
 ## 6. Relatório PDF (uma página A4)
 
 Gerado no navegador (jsPDF + jspdf-autotable), em A4 retrato com margens de 15 mm, pelo

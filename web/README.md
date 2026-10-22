@@ -19,7 +19,7 @@ Cloud Run nem faturamento.
 - Só a conta do dono (UID `4n3QdXnAE2XtFwzxMedf0Jlee552`, fixo na regra) lê e escreve.
   Outra conta, mesmo logada, e visitantes sem login **não veem nada**.
 - Coleções fora da lista (recipientes, alimentos, configuracao, saidas, sobras,
-  observacoes_dia, gastos) são negadas até para o dono.
+  observacoes_dia, gastos, folha) são negadas até para o dono.
 - Cada gravação confere os campos exatos, os tipos (valores como **string** decimal com
   ponto, nunca number), os limites (preço > 0, tara e taxa ≥ 0, valor com até 2 casas),
   o formato das datas `AAAA-MM-DD` e as formas de pagamento permitidas.
@@ -50,6 +50,32 @@ Cloud Run nem faturamento.
    e única.
 8. **Backup.** O plano Spark não tem backup automático, e as rules não protegem contra
    o próprio dono apagar dados.
+
+## Salários (aba dentro de Gastos)
+
+Em **Gastos > Salários** fica a folha de pagamento: para cada funcionário, **salário**,
+**prêmio** e **lote** (1 a 4, com prazo até os dias 05, 10, 15 e 20). O prêmio fica separado
+do salário porque é abatido da conta de consumo do funcionário na empresa e não sai como
+pagamento em dinheiro. A tela mostra, sem misturar, os 3 números do caixa:
+
+- **Salários a pagar**;
+- **Prêmios para abater do consumo**;
+- **Total da folha com prêmios**;
+
+mais o **resumo por lote** (salários, prêmios e total de cada lote). O tratamento contábil e
+trabalhista do prêmio deve ser confirmado com o contador (o aviso também aparece na tela).
+
+- **Cadastro**: nome, salário, prêmio (em branco vale 0,00) e lote. Aceita `3.500,00`,
+  `R$ 3.500,00`, `3500` ou `3500,5`. Editar e apagar (com confirmação) estão na lista.
+- **Importar tabela**: cola a tabela inteira (Funcionário, Salário, Prêmio, Lote, uma pessoa por
+  linha; pode copiar de uma planilha). Cabeçalho e linha TOTAL são ignorados, a tela mostra
+  uma prévia com os totais e **só libera o botão se todas as linhas estiverem certas**. Quem
+  já está cadastrado **não é alterado**, então importar duas vezes não duplica.
+- **Os dados ficam só no Firestore** (coleção `folha`, valores como texto com 2 casas),
+  legíveis apenas pela conta do dono. **Este repositório é público: nunca coloque nomes ou
+  salários reais no código, em testes, em commits ou em pull requests.** Os testes usam
+  nomes e valores inventados.
+- Não há histórico por mês: a tela guarda a folha atual. Para o mês seguinte, edite os valores.
 
 ## Proteções no navegador
 

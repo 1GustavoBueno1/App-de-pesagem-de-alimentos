@@ -115,6 +115,33 @@ export function lerValor(texto, campo = 'Valor') {
   return valor;
 }
 
+/**
+ * Lê um valor em reais do jeito que se escreve no Brasil: "3.500,00", "R$ 3.500,00",
+ * "3500", "3500,5" ou "3500.50". Um ponto seguido de exatamente 3 dígitos é separador de
+ * milhar ("3.500" = 3500); seguido de 1 ou 2 dígitos é decimal ("3.5" = 3,5).
+ * Aceita no máximo 2 casas decimais. Zero só com { permitirZero: true }.
+ */
+export function lerDinheiroBR(texto, campo = 'Valor', { permitirZero = false } = {}) {
+  if (typeof texto !== 'string' || texto.trim() === '') throw new Error(`${campo}: informe um valor.`);
+  const limpo = texto.trim().replace(/^R\$\s*/i, '');
+  const invalido = () => new Error(`${campo}: "${texto.trim()}" não é um valor em reais válido.`);
+  if (limpo === '') throw invalido();
+  let normal;
+  if (/^-/.test(limpo)) {
+    if (!/^-\d+([.,]\d+)?$/.test(limpo)) throw invalido();
+    throw new Error(permitirZero ? `${campo}: não pode ser negativo.` : `${campo}: deve ser maior que zero.`);
+  }
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(limpo)) normal = limpo.replace(/\./g, '').replace(',', '.'); // 1.234.567,89
+  else if (/^\d+,\d+$/.test(limpo)) normal = limpo.replace(',', '.'); // 3500,5
+  else if (/^\d+(\.\d+)?$/.test(limpo)) normal = limpo; // 3500 | 3500.50
+  else throw invalido();
+  // Conta os dígitos como foram digitados: o Decimal "apara" zeros finais ("3,500" viraria 3,5).
+  if ((normal.split('.')[1] ?? '').length > 2) throw new Error(`${campo}: use no máximo 2 casas decimais (centavos).`);
+  const valor = D(normal);
+  if (valor.lte(0) && !(permitirZero && valor.isZero())) throw new Error(`${campo}: deve ser maior que zero.`);
+  return valor;
+}
+
 /** Soma os valores dos gastos (strings do Firestore ou Decimal), com 2 casas. */
 export function totalGastos(valores) {
   let total = D(0);
