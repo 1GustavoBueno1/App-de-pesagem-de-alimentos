@@ -34,6 +34,25 @@ export function resumirFolha(lista) {
   };
 }
 
+/**
+ * Quanto já foi pago e quanto falta no mês. lista: pessoas da folha (com id); pagos: Map
+ * id -> registro do pagamento. Quem já foi pago conta pelo valor gravado na hora do
+ * pagamento; quem falta conta pelo valor atual da folha.
+ */
+export function resumirPagamentos(lista, pagos) {
+  const vazio = () => ({ pessoas: 0, salarios: D(0), premios: D(0) });
+  const resumo = { pagos: vazio(), faltam: vazio() };
+  for (const f of lista) {
+    const pago = pagos.get(f.id);
+    const alvo = pago ? resumo.pagos : resumo.faltam;
+    const fonte = pago ?? f;
+    alvo.pessoas += 1;
+    alvo.salarios = alvo.salarios.plus(lerGuardado(fonte.salario, f, 'salário'));
+    alvo.premios = alvo.premios.plus(lerGuardado(fonte.premio, f, 'prêmio'));
+  }
+  return resumo;
+}
+
 const ehCabecalho = (fichas) => /^funcion[aá]rio/i.test(fichas[0] ?? '');
 const ehTotal = (fichas) => (fichas[0] ?? '').toUpperCase() === 'TOTAL';
 

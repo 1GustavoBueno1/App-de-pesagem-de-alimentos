@@ -139,6 +139,25 @@ service cloud.firestore {
         && criadoEmValido();
     }
 
+    // Pagamentos da folha: um documento por pessoa e mês (ID AAAA-MM_idDaPessoa). Só se cria
+    // com os mesmos valores que a folha tem agora; não há edição (desmarcar = apagar).
+    match /pagamentos_folha/{id} {
+      allow read, delete: if dono();
+      allow create: if dono()
+        && camposExatos(['mes', 'funcionario_id', 'nome', 'salario', 'premio', 'lote', 'pago_em'])
+        && dados().mes is string
+        && dados().mes.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && dados().funcionario_id is string
+        && dados().funcionario_id.size() >= 1 && dados().funcionario_id.size() <= 40
+        && id == dados().mes + '_' + dados().funcionario_id
+        && exists(/databases/$(database)/documents/folha/$(dados().funcionario_id))
+        && get(/databases/$(database)/documents/folha/$(dados().funcionario_id)).data.nome == dados().nome
+        && get(/databases/$(database)/documents/folha/$(dados().funcionario_id)).data.salario == dados().salario
+        && get(/databases/$(database)/documents/folha/$(dados().funcionario_id)).data.premio == dados().premio
+        && get(/databases/$(database)/documents/folha/$(dados().funcionario_id)).data.lote == dados().lote
+        && dados().pago_em == request.time;
+    }
+
     match /gastos/{id} {
       allow read, delete: if dono();
       allow create, update: if dono()

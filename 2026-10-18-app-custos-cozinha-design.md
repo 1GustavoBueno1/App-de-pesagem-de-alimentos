@@ -97,7 +97,11 @@ isso é mostrado **separado** do salário: **Salários a pagar**, **Prêmios par
 consumo** e **Total da folha com prêmios**, mais o **resumo por lote** (lote 1 até dia 05,
 2 até dia 10, 3 até dia 15 e 4 até dia 20). Cadastro, edição, exclusão com confirmação e
 importação por colar tabela. Dados só no Firestore (coleção `folha`), visíveis só ao dono.
-Não entra no PDF do dia.
+Há também o controle de **pagamento mês a mês**: seletor de mês, situação "Falta pagar" ou
+"Pago em dd/mm" por pessoa, filtros por lote e por situação, e resumo do que falta pagar
+(salários e prêmios a abater) e do que já foi pago. O pagamento fica na coleção
+`pagamentos_folha` (ID `AAAA-MM_idDaPessoa`, valores da hora do pagamento, sem edição:
+desfazer apaga). Não entra no PDF do dia.
 
 ## 6. Relatório PDF (uma página A4)
 

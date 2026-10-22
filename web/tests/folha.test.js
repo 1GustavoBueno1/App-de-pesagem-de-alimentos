@@ -1,7 +1,7 @@
 // Dados INVENTADOS: o repositório é público, então nomes e salários reais nunca entram aqui.
 import { describe, it, expect } from 'vitest';
 import { D } from '../src/calculos.js';
-import { resumirFolha, lerLinhasFolha, PRAZOS_LOTE } from '../src/folha.js';
+import { resumirFolha, resumirPagamentos, lerLinhasFolha, PRAZOS_LOTE } from '../src/folha.js';
 
 const f = (salario, premio, lote, nome = 'Fulano') => ({ nome, salario, premio, lote });
 
@@ -94,5 +94,42 @@ describe('lerLinhasFolha (colar a tabela)', () => {
   it('texto vazio: nada válido, nada de erro', () => {
     const r = lerLinhasFolha('  \n ');
     expect([r.validas.length, r.erros.length]).toEqual([0, 0]);
+  });
+});
+
+describe('resumirPagamentos', () => {
+  const lista = [
+    { id: 'a', ...f('3000.00', '500.00', 2) },
+    { id: 'b', ...f('2000.50', '250.25', 2) },
+    { id: 'c', ...f('1000.00', '0.00', 1) },
+  ];
+  it('ninguém pago: tudo falta', () => {
+    const r = resumirPagamentos(lista, new Map());
+    expect(r.pagos.pessoas).toBe(0);
+    expect(r.pagos.salarios.toFixed(2)).toBe('0.00');
+    expect(r.faltam.pessoas).toBe(3);
+    expect(r.faltam.salarios.toFixed(2)).toBe('6000.50');
+    expect(r.faltam.premios.toFixed(2)).toBe('750.25');
+  });
+  it('separa pagos e faltantes', () => {
+    const r = resumirPagamentos(lista, new Map([['b', { salario: '2000.50', premio: '250.25' }]]));
+    expect(r.pagos).toMatchObject({ pessoas: 1 });
+    expect(r.pagos.salarios.toFixed(2)).toBe('2000.50');
+    expect(r.pagos.premios.toFixed(2)).toBe('250.25');
+    expect(r.faltam.pessoas).toBe(2);
+    expect(r.faltam.salarios.toFixed(2)).toBe('4000.00');
+    expect(r.faltam.premios.toFixed(2)).toBe('500.00');
+  });
+  it('quem foi pago conta pelo valor gravado na hora, não pelo atual', () => {
+    const r = resumirPagamentos(lista, new Map([['a', { salario: '2800.00', premio: '400.00' }]]));
+    expect(r.pagos.salarios.toFixed(2)).toBe('2800.00');
+    expect(r.pagos.premios.toFixed(2)).toBe('400.00');
+  });
+  it('pagamento de pessoa que não está na lista é ignorado', () => {
+    const r = resumirPagamentos(lista, new Map([['zzz', { salario: '9999.00', premio: '0.00' }]]));
+    expect(r.pagos.pessoas).toBe(0);
+  });
+  it('lista vazia', () => {
+    expect(resumirPagamentos([], new Map()).faltam.pessoas).toBe(0);
   });
 });

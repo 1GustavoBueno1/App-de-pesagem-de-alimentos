@@ -28,6 +28,7 @@ import {
   custoProducao,
   percentualSobra,
 } from './calculos.js';
+import { mesValido } from './datas.js';
 import { dataValida } from './datas.js';
 import { paraFirestore, peso } from './formato.js';
 
@@ -363,6 +364,35 @@ export function criarRepositorio(db) {
     return { criados: novas.length, ignorados };
   }
 
+  // ---- Pagamentos da folha, mês a mês ----------------------------------------------
+  // Um documento por pessoa e mês (ID AAAA-MM_idDaPessoa). Existir = pago. Guarda os valores
+  // da hora do pagamento, para o histórico não mudar se a folha for editada depois.
+  async function pagamentosDoMes(mes) {
+    if (!mesValido(mes)) throw new Error('Mês inválido.');
+    const snap = await getDocs(query(collection(db, 'pagamentos_folha'), where('mes', '==', mes)));
+    return new Map(snap.docs.map((d) => [d.data().funcionario_id, comId(d)]));
+  }
+
+  async function marcarPago(mes, funcionario) {
+    if (!mesValido(mes)) throw new Error('Mês inválido.');
+    const ref = doc(db, 'pagamentos_folha', `${mes}_${funcionario.id}`);
+    if ((await getDoc(ref)).exists()) return; // já estava pago (toque repetido)
+    await setDoc(ref, {
+      mes,
+      funcionario_id: funcionario.id,
+      nome: funcionario.nome,
+      salario: funcionario.salario,
+      premio: funcionario.premio,
+      lote: funcionario.lote,
+      pago_em: serverTimestamp(),
+    });
+  }
+
+  async function desmarcarPago(mes, funcionarioId) {
+    if (!mesValido(mes)) throw new Error('Mês inválido.');
+    await deleteDoc(doc(db, 'pagamentos_folha', `${mes}_${funcionarioId}`));
+  }
+
   return {
     recipientes,
     salvarRecipiente,
@@ -389,5 +419,8 @@ export function criarRepositorio(db) {
     salvarFolha,
     apagarFolha,
     importarFolha,
+    pagamentosDoMes,
+    marcarPago,
+    desmarcarPago,
   };
 }
