@@ -67,6 +67,8 @@ trabalhista do prêmio deve ser confirmado com o contador (o aviso também apare
 
 - **Cadastro**: nome, salário, prêmio (em branco vale 0,00) e lote. Aceita `3.500,00`,
   `R$ 3.500,00`, `3500` ou `3500,5`. Editar e apagar (com confirmação) estão na lista.
+- **Filtro por lote**: botões Todos, Lote 1 a 4 acima da lista mostram só quem recebe naquele
+  prazo, com o total a pagar em salários, os prêmios a abater e o total do lote.
 - **Importar tabela**: cola a tabela inteira (Funcionário, Salário, Prêmio, Lote, uma pessoa por
   linha; pode copiar de uma planilha). Cabeçalho e linha TOTAL são ignorados, a tela mostra
   uma prévia com os totais e **só libera o botão se todas as linhas estiverem certas**. Quem

@@ -24,6 +24,7 @@ export function telaSalarios(repo) {
   const aviso = criarAviso();
   let lista = [];
   let editando = null;
+  let filtro = 0; // 0 = todos os lotes
 
   // ---- Totais (os 3 números do caixa)
   const visor = criarVisor(
@@ -93,6 +94,66 @@ export function telaSalarios(repo) {
 
   // ---- Lista e resumo
   const area = el('div', {});
+  const barraFiltro = el('div', { class: 'filtro-lote', role: 'group', 'aria-label': 'Mostrar por lote' });
+  const resumoFiltro = el('p', { class: 'resumo-filtro', 'aria-live': 'polite' });
+
+  function desenharFiltro() {
+    trocar(
+      barraFiltro,
+      [0, ...LOTES].map((l) =>
+        el(
+          'button',
+          {
+            type: 'button',
+            'aria-pressed': String(filtro === l),
+            onclick: () => {
+              filtro = l;
+              desenharLista();
+            },
+          },
+          l === 0 ? 'Todos' : `Lote ${l}`,
+        ),
+      ),
+    );
+  }
+
+  function desenharLista() {
+    desenharFiltro();
+    const visiveis = filtro ? lista.filter((f) => f.lote === filtro) : lista;
+    const r = resumirFolha(visiveis);
+    trocar(
+      resumoFiltro,
+      filtro
+        ? `Lote ${filtro} (${PRAZOS_LOTE[filtro].toLowerCase()}): ${r.totais.pessoas} ${r.totais.pessoas === 1 ? 'pessoa' : 'pessoas'} · salários a pagar ${dinheiro(r.totais.salarios)} · prêmios a abater ${dinheiro(r.totais.premios)} · total ${dinheiro(r.totais.total)}`
+        : '',
+    );
+    resumoFiltro.hidden = !filtro;
+    trocar(
+      area,
+      visiveis.length
+        ? tabela(
+            ['Funcionário', 'Salário', 'Prêmio', 'Lote', 'Ações'],
+            visiveis.map((f) =>
+              el(
+                'tr',
+                {},
+                el('td', {}, f.nome),
+                el('td', { class: 'num' }, dinheiro(f.salario)),
+                el('td', { class: 'num' }, dinheiro(f.premio)),
+                el('td', {}, textoLote(f.lote)),
+                el('td', { class: 'acoes' }, botaoEditar(f), botaoApagar(f)),
+              ),
+            ),
+          )
+        : el(
+            'p',
+            { class: 'aviso' },
+            lista.length
+              ? `Ninguém no lote ${filtro}.`
+              : 'Nenhum funcionário cadastrado. Adicione acima ou use "Importar tabela" para colar a folha de uma vez.',
+          ),
+    );
+  }
 
   async function desenhar() {
     lista = await repo.folha();
@@ -130,25 +191,7 @@ export function telaSalarios(repo) {
       tabela(['Lote', 'Prazo', 'Salários', 'Prêmios', 'Total'], linhasLotes),
     );
 
-    trocar(
-      area,
-      lista.length
-        ? tabela(
-            ['Funcionário', 'Salário', 'Prêmio', 'Lote', 'Ações'],
-            lista.map((f) =>
-              el(
-                'tr',
-                {},
-                el('td', {}, f.nome),
-                el('td', { class: 'num' }, dinheiro(f.salario)),
-                el('td', { class: 'num' }, dinheiro(f.premio)),
-                el('td', {}, textoLote(f.lote)),
-                el('td', { class: 'acoes' }, botaoEditar(f), botaoApagar(f)),
-              ),
-            ),
-          )
-        : el('p', { class: 'aviso' }, 'Nenhum funcionário cadastrado. Adicione acima ou use "Importar tabela" para colar a folha de uma vez.'),
-    );
+    desenharLista();
   }
 
   function botaoEditar(f) {
@@ -259,6 +302,6 @@ export function telaSalarios(repo) {
     visor.elemento,
     nota,
     el('section', { class: 'pilha' }, resumoLotes),
-    el('section', { class: 'cartao bloco-folha' }, el('h3', {}, 'Folha de pagamento'), form, area),
+    el('section', { class: 'cartao bloco-folha' }, el('h3', {}, 'Folha de pagamento'), form, barraFiltro, resumoFiltro, area),
   );
 }
