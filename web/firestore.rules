@@ -1,7 +1,8 @@
 rules_version = '2';
 
-// Regras de segurança do Firestore. Só o UID do dono lê e escreve, e tudo que não
-// estiver listado aqui é negado (o Firestore nega o que nenhuma regra libera).
+// Regras de segurança do Firestore. O dono lê e escreve tudo; o operador só cadastra
+// alimentos e lança saídas e sobras. Tudo que não estiver listado aqui é negado (o
+// Firestore nega o que nenhuma regra libera).
 //
 // Os valores (pesos, preços, taxa, dinheiro) são STRING com ponto decimal, nunca number.
 // O que estas regras NÃO garantem está explicado no README.
@@ -12,6 +13,14 @@ service cloud.firestore {
     function dono() {
       return request.auth != null && request.auth.uid == '4n3QdXnAE2XtFwzxMedf0Jlee552';
     }
+
+    // Operador (rubens@gmail.com): cadastra e edita alimentos, lança saídas e sobras.
+    // Lê só o que essas telas precisam. Não apaga nada e não edita saída/sobra já lançada.
+    function operador() {
+      return request.auth != null && request.auth.uid == 'YnBc0pPzKDNrVUTdnunFjVVTBpT2';
+    }
+
+    function equipe() { return dono() || operador(); }
 
     // ---- Validações reutilizadas -------------------------------------------
     function dados() { return request.resource.data; }
@@ -61,7 +70,8 @@ service cloud.firestore {
 
     // ---- Coleções -----------------------------------------------------------
     match /recipientes/{id} {
-      allow read, delete: if dono();
+      allow read: if equipe();
+      allow delete: if dono();
       allow create, update: if dono()
         && camposExatos(['nome', 'tara'])
         && texto(dados().nome, 1, 60)
@@ -69,8 +79,9 @@ service cloud.firestore {
     }
 
     match /alimentos/{id} {
-      allow read, delete: if dono();
-      allow create, update: if dono()
+      allow read: if equipe();
+      allow delete: if dono();
+      allow create, update: if equipe()
         && camposExatos(['nome', 'preco_kg', 'recipiente_padrao_id'])
         && texto(dados().nome, 1, 60)
         && decimalPositivo(dados().preco_kg)
@@ -79,17 +90,15 @@ service cloud.firestore {
     }
 
     match /configuracao/{id} {
-      allow read: if dono();
+      allow read: if equipe();
       allow create, update: if dono()
         && id == 'taxa'
         && camposExatos(['valor'])
         && decimal(dados().valor);
     }
 
-    match /saidas/{id} {
-      allow read: if dono();
-      allow create, update: if dono()
-        && camposExatos(['data', 'alimento_id', 'alimento_nome', 'recipiente_id',
+    function saidaValida() {
+      return camposExatos(['data', 'alimento_id', 'alimento_nome', 'recipiente_id',
                          'recipiente_nome', 'peso_bruto', 'tara', 'preco_kg', 'taxa',
                          'criado_em'])
         && data(dados().data)
@@ -102,19 +111,30 @@ service cloud.firestore {
         && decimalPositivo(dados().preco_kg)
         && decimal(dados().taxa)
         && criadoEmValido();
+    }
+
+    match /saidas/{id} {
+      allow read: if equipe();
+      allow create: if equipe() && saidaValida();
+      allow update: if dono() && saidaValida();
       // Só apaga a saída se a sobra dela também sumir na mesma operação.
       allow delete: if dono()
         && !existsAfter(/databases/$(database)/documents/sobras/$(id));
     }
 
     // O ID da sobra é o ID da saída: no máximo uma sobra por saída.
-    match /sobras/{saidaId} {
-      allow read, delete: if dono();
-      allow create, update: if dono()
-        && existe('saidas', saidaId)
+    function sobraValida(saidaId) {
+      return existe('saidas', saidaId)
         && camposExatos(['peso_bruto', 'criado_em'])
         && decimal(dados().peso_bruto)
         && criadoEmValido();
+    }
+
+    match /sobras/{saidaId} {
+      allow read: if equipe();
+      allow delete: if dono();
+      allow create: if equipe() && sobraValida(saidaId);
+      allow update: if dono() && sobraValida(saidaId);
     }
 
     match /observacoes_dia/{dia} {

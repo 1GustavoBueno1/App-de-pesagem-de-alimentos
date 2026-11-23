@@ -16,8 +16,14 @@ Cloud Run nem faturamento.
 
 ## Security Rules (`firestore.rules`)
 
-- Só a conta do dono (UID `4n3QdXnAE2XtFwzxMedf0Jlee552`, fixo na regra) lê e escreve.
-  Outra conta, mesmo logada, e visitantes sem login **não veem nada**.
+- A conta do dono (UID `4n3QdXnAE2XtFwzxMedf0Jlee552`, fixo na regra) lê e escreve tudo.
+- A conta do operador (Rubens, UID `YnBc0pPzKDNrVUTdnunFjVVTBpT2`) só **cadastra e edita
+  alimentos** e **lança saídas e sobras**. Ela lê recipientes, taxa, alimentos, saídas e
+  sobras (as telas precisam), mas não apaga nada, não edita saída nem sobra já lançada e
+  não vê observações, gastos, folha nem pagamentos. No app ela vê só "Registrar saída",
+  "Registrar sobra" e "Alimentos". Os UIDs também ficam em `src/perfis.js` (um teste
+  confere que batem com as rules).
+- Outra conta, mesmo logada, e visitantes sem login **não veem nada**.
 - Coleções fora da lista (recipientes, alimentos, configuracao, saidas, sobras,
   observacoes_dia, gastos, folha, pagamentos_folha) são negadas até para o dono.
 - Cada gravação confere os campos exatos, os tipos (valores como **string** decimal com

@@ -11,9 +11,11 @@ export const ABAS_PESAGEM = [
   { id: 'relatorios', nome: 'Relatórios', tela: (repo) => telaDia(repo, { editavel: false }) },
 ];
 
-export function telaPesagem(repo, abaId) {
-  const aba = ABAS_PESAGEM.find((a) => a.id === abaId) ?? ABAS_PESAGEM[0];
-  const abas = ABAS_PESAGEM.map((a) =>
+/** `permitidas`: IDs das abas que aparecem (sem ele, todas). */
+export function telaPesagem(repo, abaId, permitidas) {
+  const lista = permitidas ? ABAS_PESAGEM.filter((a) => permitidas.includes(a.id)) : ABAS_PESAGEM;
+  const aba = lista.find((a) => a.id === abaId) ?? lista[0];
+  const abas = lista.map((a) =>
     el('a', { href: `#pesagem/${a.id}`, class: 'aba', 'aria-current': a.id === aba.id ? 'page' : null }, a.nome),
   );
   return el(

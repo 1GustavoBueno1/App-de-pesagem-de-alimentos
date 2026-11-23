@@ -32,7 +32,9 @@ beforeAll(async () => {
 });
 afterAll(() => env.cleanup());
 
+const OPERADOR = 'YnBc0pPzKDNrVUTdnunFjVVTBpT2';
 const dono = () => env.authenticatedContext(DONO).firestore();
+const operador = () => env.authenticatedContext(OPERADOR).firestore();
 const outro = () => env.authenticatedContext('outra-conta').firestore();
 const anonimo = () => env.unauthenticatedContext().firestore();
 
@@ -102,6 +104,46 @@ describe('acesso: só o dono', () => {
   });
   it('dono consulta saídas por data', () =>
     assertSucceeds(getDocs(query(collection(dono(), 'saidas'), where('data', '==', '2026-10-21')))));
+});
+
+describe('acesso: operador (cadastra alimentos, lança saída e sobra)', () => {
+  it.each(['recipientes/cuba', 'alimentos/arroz', 'configuracao/taxa', 'saidas/s1', 'sobras/s1'])(
+    'operador lê %s',
+    (c) => assertSucceeds(getDoc(doc(operador(), c))),
+  );
+  it.each(['observacoes_dia/2026-10-21', 'gastos/g1', 'folha/f1', 'pagamentos_folha/2026-10_f1'])(
+    'operador NÃO lê %s',
+    (c) => assertFails(getDoc(doc(operador(), c))),
+  );
+  it.each(COLECOES)('operador NÃO apaga %s', (c) => assertFails(deleteDoc(doc(operador(), c))));
+  it('operador consulta saídas por data', () =>
+    assertSucceeds(getDocs(query(collection(operador(), 'saidas'), where('data', '==', '2026-10-21')))));
+
+  it('operador cria alimento', () =>
+    assertSucceeds(setDoc(doc(operador(), 'alimentos/feijao'), { ...alimento, nome: 'Feijão' })));
+  it('operador edita alimento', () => assertSucceeds(updateDoc(doc(operador(), 'alimentos/arroz'), { preco_kg: '9.00' })));
+  it('operador NÃO grava alimento inválido', () =>
+    assertFails(setDoc(doc(operador(), 'alimentos/feijao'), { ...alimento, preco_kg: '0' })));
+
+  it('operador cria saída', () => assertSucceeds(setDoc(doc(operador(), 'saidas/s2'), saida())));
+  it('operador NÃO cria saída inválida', () =>
+    assertFails(setDoc(doc(operador(), 'saidas/s2'), { ...saida(), peso_bruto: '0' })));
+  it('operador NÃO edita saída', () => assertFails(updateDoc(doc(operador(), 'saidas/s1'), { peso_bruto: '6.1' })));
+
+  it('operador cria sobra', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'saidas/s2'), { ...saida(), criado_em: Timestamp.now() }),
+    );
+    await assertSucceeds(setDoc(doc(operador(), 'sobras/s2'), sobra()));
+  });
+  it('operador NÃO edita sobra', () => assertFails(updateDoc(doc(operador(), 'sobras/s1'), { peso_bruto: '1.0' })));
+
+  it.each([
+    ['recipiente', 'recipientes/r2', recipiente],
+    ['taxa', 'configuracao/taxa', { valor: '0.5' }],
+    ['observação', 'observacoes_dia/2026-10-22', { texto: 'x' }],
+    ['gasto', 'gastos/g2', gasto()],
+  ])('operador NÃO grava %s', (_, caminho, dados) => assertFails(setDoc(doc(operador(), caminho), dados)));
 });
 
 describe('recipientes', () => {

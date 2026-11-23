@@ -1,4 +1,5 @@
 // Cadastros: taxa, recipientes e alimentos (formulário no topo, lista abaixo).
+// Com { somenteAlimentos: true } (operador): só o cartão de alimentos e sem o botão Apagar.
 import { el, trocar } from '../dom.js';
 import { D } from '../calculos.js';
 import { dinheiro, peso, taxaPercentual } from '../formato.js';
@@ -14,11 +15,16 @@ import {
   tabela,
 } from '../ui.js';
 
-export function telaCadastros(repo) {
+export function telaCadastros(repo, { somenteAlimentos = false } = {}) {
   const area = el('div', { class: 'pilha' }, el('p', { class: 'aviso' }, 'Carregando…'));
   const aviso = criarAviso();
 
   async function desenhar() {
+    if (somenteAlimentos) {
+      const [recipientes, alimentos] = await Promise.all([repo.recipientes(), repo.alimentos()]);
+      trocar(area, cartaoAlimentos(alimentos, recipientes));
+      return;
+    }
     const [recipientes, alimentos, taxa] = await Promise.all([repo.recipientes(), repo.alimentos(), repo.taxa()]);
     trocar(
       area,
@@ -161,7 +167,9 @@ export function telaCadastros(repo) {
             cancelar.hidden = false;
             nome.input.focus();
           }),
-          botaoApagar(`Apagar o alimento "${a.nome}"?`, () => repo.apagarAlimento(a.id), `Alimento "${a.nome}" apagado.`),
+          somenteAlimentos
+            ? null
+            : botaoApagar(`Apagar o alimento "${a.nome}"?`, () => repo.apagarAlimento(a.id), `Alimento "${a.nome}" apagado.`),
         ),
       ),
     );
@@ -209,5 +217,5 @@ export function telaCadastros(repo) {
   }
 
   desenhar().catch((e) => aviso.erro(traduzirErro(e)));
-  return el('div', {}, el('h2', {}, 'Cadastros'), aviso.elemento, area);
+  return el('div', {}, el('h2', {}, somenteAlimentos ? 'Alimentos' : 'Cadastros'), aviso.elemento, area);
 }
