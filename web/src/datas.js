@@ -70,3 +70,20 @@ export function somarMes(mes, n) {
   const indice = a * 12 + (m - 1) + n;
   return `${Math.floor(indice / 12)}-${String((indice % 12) + 1).padStart(2, '0')}`;
 }
+
+/** Soma (ou subtrai) dias de um AAAA-MM-DD: somarDias('2026-10-31', 1) -> '2026-11-01'. */
+export function somarDias(dia, n) {
+  const [a, m, d] = dia.split('-').map(Number);
+  const x = new Date(Date.UTC(a, m - 1, d + n));
+  const mm = String(x.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(x.getUTCDate()).padStart(2, '0');
+  return `${x.getUTCFullYear()}-${mm}-${dd}`;
+}
+
+/** Semana (segunda a domingo) que contém o dia dado. */
+export function semanaDe(dia) {
+  const [a, m, d] = dia.split('-').map(Number);
+  const diaDaSemana = new Date(Date.UTC(a, m - 1, d)).getUTCDay(); // 0 = domingo
+  const inicio = somarDias(dia, -((diaDaSemana + 6) % 7));
+  return { inicio, fim: somarDias(inicio, 6) };
+}

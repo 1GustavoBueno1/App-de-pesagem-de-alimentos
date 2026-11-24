@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { montarRelatorio } from '../src/relatorio.js';
-import { gerarPdf } from '../src/pdf.js';
+import { montarRelatorio, montarRelatorioPeriodo } from '../src/relatorio.js';
+import { gerarPdf, gerarPdfPeriodo } from '../src/pdf.js';
 
 const saida = (id, nome, extra = {}) => ({
   id,
@@ -111,6 +111,111 @@ describe('gerarPdf', () => {
 
   it('dia sem saídas gera PDF com aviso', () => {
     const t = texto(gerarPdf(montarRelatorio(base({ saidas: [], sobras: new Map() }))));
+    expect(t).toContain('Nenhuma sa');
+  });
+});
+
+// ---- Semanal e mensal ------------------------------------------------------------
+function periodo(extra = {}) {
+  return {
+    tipo: 'semanal',
+    inicio: '2026-10-19',
+    fim: '2026-10-25',
+    saidas: [
+      saida('a', 'Arroz', { data: '2026-10-21' }),
+      saida('b', 'Feijão', { data: '2026-10-21', peso_bruto: '4.05', tara: '3.8', preco_kg: '10.10' }),
+      saida('c', 'Arroz', { data: '2026-10-23', peso_bruto: '4.0' }),
+    ],
+    sobras: new Map([['a', { peso_bruto: '2.5' }]]),
+    gastos: [],
+    geradoEm: GERADO,
+    ...extra,
+  };
+}
+
+describe('montarRelatorioPeriodo', () => {
+  it('semanal: título, arquivo e resumo', () => {
+    const r = montarRelatorioPeriodo(periodo());
+    expect(r.titulo).toBe('Relatório semanal de produção: 19/10/2026 a 25/10/2026');
+    expect(r.subtitulo).toBeNull();
+    expect(r.nomeArquivo).toBe('relatorio-semanal-2026-10-19-a-2026-10-25.pdf');
+    // Arroz 21/10: 36,47 · Feijão: 3,28 · Arroz 23/10: 2,0 kg × 8,50 × 1,3 = 22,10
+    expect(r.resumo).toEqual([
+      ['Custo de produção', 'R$ 61,85'],
+      ['Peso líquido', '5,550 kg'],
+      ['Sobra registrada', '0,500 kg'],
+      ['Dias com produção', '2'],
+      ['Custo médio por dia com produção', 'R$ 30,93'],
+      ['Gastos do período', 'R$ 0,00'],
+    ]);
+  });
+
+  it('por dia soma igual ao relatório de cada dia', () => {
+    const r = montarRelatorioPeriodo(periodo());
+    expect(r.porDia.linhas).toEqual([
+      ['21/10/2026 (qua)', '2', '3,550', '39,75', '0,500'],
+      ['23/10/2026 (sex)', '1', '2,000', '22,10', '0,000'],
+    ]);
+    expect(r.porDia.totais).toEqual(['Totais', '3', '5,550', '61,85', '0,500']);
+  });
+
+  it('por alimento, do maior custo para o menor', () => {
+    const r = montarRelatorioPeriodo(periodo());
+    expect(r.porAlimento.linhas).toEqual([
+      ['Arroz', '2', '5,300', '58,57', '0,500'],
+      ['Feijão', '1', '0,250', '3,28', '0,000'],
+    ]);
+  });
+
+  it('mensal: título com o mês e gastos com data', () => {
+    const r = montarRelatorioPeriodo(
+      periodo({
+        tipo: 'mensal',
+        inicio: '2026-10-01',
+        fim: '2026-10-31',
+        gastos: [{ descricao: 'Gás', forma_pagamento: 'Pix', valor: '120.5', data_pagamento: '2026-10-05' }],
+      }),
+    );
+    expect(r.titulo).toBe('Relatório mensal de produção: outubro de 2026');
+    expect(r.subtitulo).toBe('Período: 01/10/2026 a 31/10/2026');
+    expect(r.nomeArquivo).toBe('relatorio-mensal-2026-10.pdf');
+    expect(r.gastos).toEqual({ linhas: [['05/10/2026', 'Gás', 'Pix', '120,50']], total: '120,50' });
+    expect(r.resumo.at(-1)).toEqual(['Gastos do período', 'R$ 120,50']);
+  });
+
+  it('período sem saídas', () => {
+    const r = montarRelatorioPeriodo(periodo({ saidas: [], sobras: new Map() }));
+    expect(r.vazio).toBe(true);
+    expect(r.porDia.linhas).toEqual([]);
+    expect(r.resumo[4]).toEqual(['Custo médio por dia com produção', '—']);
+  });
+});
+
+describe('gerarPdfPeriodo', () => {
+  it('A4 com resumo, tabelas por dia e por alimento', () => {
+    const doc = gerarPdfPeriodo(montarRelatorioPeriodo(periodo()));
+    const { width, height } = doc.internal.pageSize;
+    expect([Math.round(width), Math.round(height)]).toEqual([210, 297]);
+    const t = texto(doc);
+    for (const trecho of ['19/10/2026 a 25/10/2026', 'Resumo', 'por dia', 'por alimento', '61,85', '58,57', 'Página 1 de 1']) {
+      expect(t).toContain(trecho);
+    }
+    expect(t).not.toContain('Forma de pagamento'); // sem tabela de gastos
+  });
+
+  it('mês cheio passa de página com cabeçalho repetido', () => {
+    const muitas = Array.from({ length: 31 * 3 }, (_, i) =>
+      saida(`s${i}`, `Alimento ${i}`, { data: `2026-10-${String((i % 31) + 1).padStart(2, '0')}` }),
+    );
+    const doc = gerarPdfPeriodo(
+      montarRelatorioPeriodo(periodo({ tipo: 'mensal', inicio: '2026-10-01', fim: '2026-10-31', saidas: muitas, sobras: new Map() })),
+    );
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+    expect(texto(doc)).toContain('Alimento 92');
+  });
+
+  it('período sem saídas gera PDF com aviso', () => {
+    const t = texto(gerarPdfPeriodo(montarRelatorioPeriodo(periodo({ saidas: [], sobras: new Map() }))));
     expect(t).toContain('Nenhuma sa');
   });
 });

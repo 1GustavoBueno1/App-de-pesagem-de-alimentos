@@ -44,3 +44,20 @@ describe('meses (AAAA-MM)', () => {
     expect(somarMes('2026-10', 0)).toBe('2026-10');
   });
 });
+
+describe('somarDias e semanaDe', () => {
+  it('soma dias atravessando mês e ano', async () => {
+    const { somarDias } = await import('../src/datas.js');
+    expect(somarDias('2026-10-31', 1)).toBe('2026-11-01');
+    expect(somarDias('2027-01-01', -1)).toBe('2026-12-31');
+    expect(somarDias('2028-02-28', 1)).toBe('2028-02-29');
+  });
+  it('semana de segunda a domingo', async () => {
+    const { semanaDe } = await import('../src/datas.js');
+    // 24/11/2026 é terça.
+    expect(semanaDe('2026-11-24')).toEqual({ inicio: '2026-11-23', fim: '2026-11-29' });
+    expect(semanaDe('2026-11-23')).toEqual({ inicio: '2026-11-23', fim: '2026-11-29' }); // segunda
+    expect(semanaDe('2026-11-29')).toEqual({ inicio: '2026-11-23', fim: '2026-11-29' }); // domingo
+    expect(semanaDe('2026-12-31')).toEqual({ inicio: '2026-12-28', fim: '2027-01-03' }); // vira o ano
+  });
+});

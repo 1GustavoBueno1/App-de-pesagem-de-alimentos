@@ -232,6 +232,17 @@ export function criarRepositorio(db) {
     return snap.docs.map(comId).sort((a, b) => ms(a) - ms(b));
   }
 
+  /** Saídas com data entre inicio e fim (inclusive), por data e hora de lançamento. */
+  async function saidasDoPeriodo(inicio, fim) {
+    if (!dataValida(inicio) || !dataValida(fim)) throw new Error('Período: informe datas válidas.');
+    if (inicio > fim) throw new Error('Período: a data inicial não pode ser depois da final.');
+    const snap = await getDocs(
+      query(collection(db, 'saidas'), where('data', '>=', inicio), where('data', '<=', fim), orderBy('data')),
+    );
+    const ms = (s) => s.criado_em?.toMillis?.() ?? 0;
+    return snap.docs.map(comId).sort((a, b) => a.data.localeCompare(b.data) || ms(a) - ms(b));
+  }
+
   // ---- Sobras (ID = ID da saída) ------------------------------------------
   async function sobrasDe(idsSaidas) {
     const mapa = new Map();
@@ -406,6 +417,7 @@ export function criarRepositorio(db) {
     editarSaida,
     apagarSaida,
     saidasDoDia,
+    saidasDoPeriodo,
     sobrasDe,
     salvarSobra,
     apagarSobra,

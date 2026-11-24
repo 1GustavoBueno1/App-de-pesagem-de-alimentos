@@ -1,9 +1,9 @@
 // Tela de um dia: tabela das saídas com sobra, totais e observação.
 // editavel = true  -> aba "Hoje" (abre em hoje, mas aceita outra data para corrigir dias anteriores)
-// editavel = false -> aba "Relatórios" (só leitura, com o botão Gerar PDF)
+// editavel = false -> aba "Relatórios" (só leitura, com os botões de PDF do dia, da semana e do mês)
 import { el, trocar } from '../dom.js';
 import { D, totalGastos } from '../calculos.js';
-import { diaSP, formatarData } from '../datas.js';
+import { diaSP, formatarData, mesDe, semanaDe } from '../datas.js';
 import { dinheiro, peso, percentual, taxaPercentual } from '../formato.js';
 import { resumirDia } from '../resumo.js';
 import {
@@ -220,7 +220,7 @@ export function telaDia(repo, { editavel }) {
     desenhar().catch((e) => aviso.erro(traduzirErro(e)));
   });
 
-  const pdf = editavel ? null : el('button', { type: 'button', class: 'primario' }, 'Gerar PDF');
+  const pdf = editavel ? null : el('button', { type: 'button', class: 'primario' }, 'PDF do dia');
   pdf?.addEventListener('click', () =>
     executar(aviso, pdf, async () => {
       if (!carregado || carregado.dia !== data.input.value) await desenhar();
@@ -232,11 +232,34 @@ export function telaDia(repo, { editavel }) {
     }),
   );
 
+  // Semana (segunda a domingo) ou mês que contém o dia escolhido no campo.
+  function botaoPeriodo(rotulo, tipo, periodoDe) {
+    const botao = el('button', { type: 'button' }, rotulo);
+    botao.addEventListener('click', () =>
+      executar(aviso, botao, async () => {
+        const { inicio, fim } = periodoDe(data.input.value);
+        const [saidas, gastos, { montarRelatorioPeriodo }, { baixarPdfPeriodo }] = await Promise.all([
+          repo.saidasDoPeriodo(inicio, fim),
+          repo.gastosDoPeriodo(inicio, fim),
+          import('../relatorio.js'),
+          import('../pdf.js'),
+        ]);
+        const sobras = await repo.sobrasDe(saidas.map((s) => s.id));
+        const relatorio = montarRelatorioPeriodo({ tipo, inicio, fim, saidas, sobras, gastos });
+        baixarPdfPeriodo(relatorio);
+        aviso.ok(`PDF gerado: ${relatorio.nomeArquivo}`);
+      }),
+    );
+    return botao;
+  }
+  const pdfSemana = editavel ? null : botaoPeriodo('PDF da semana', 'semanal', semanaDe);
+  const pdfMes = editavel ? null : botaoPeriodo('PDF do mês', 'mensal', mesDe);
+
   desenhar().catch((e) => aviso.erro(traduzirErro(e)));
   return el(
     'div',
     {},
-    el('div', { class: 'linha-form' }, data.bloco, pdf),
+    el('div', { class: 'linha-form' }, data.bloco, pdf, pdfSemana, pdfMes),
     aviso.elemento,
     titulo,
     area,

@@ -116,6 +116,15 @@ describe('saídas e sobras', () => {
     await repo.criarSaida({ data: '2026-10-22', alimentoId: arroz.id, recipienteId: cuba.id, pesoBruto: '6' });
     expect((await repo.saidasDoDia('2026-10-21')).map((s) => s.peso_bruto)).toEqual(['5']);
   });
+  it('consulta por período inclui as pontas e ordena por data', async () => {
+    const { cuba, arroz } = await preparar();
+    for (const [data, pesoBruto] of [['2026-10-26', '9'], ['2026-10-19', '5'], ['2026-10-25', '7'], ['2026-10-18', '4']]) {
+      await repo.criarSaida({ data, alimentoId: arroz.id, recipienteId: cuba.id, pesoBruto });
+    }
+    const lista = await repo.saidasDoPeriodo('2026-10-19', '2026-10-25');
+    expect(lista.map((s) => [s.data, s.peso_bruto])).toEqual([['2026-10-19', '5'], ['2026-10-25', '7']]);
+    await expect(repo.saidasDoPeriodo('2026-10-25', '2026-10-19')).rejects.toThrow('Período: a data inicial não pode ser depois da final.');
+  });
   it('sobra: cria, valida limites, edita e apaga', async () => {
     const { cuba, arroz } = await preparar();
     const s = await repo.criarSaida({ data: '2026-10-21', alimentoId: arroz.id, recipienteId: cuba.id, pesoBruto: '5,3' });
